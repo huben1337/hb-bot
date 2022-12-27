@@ -48,9 +48,7 @@ async function startWnoName() {
 
 //send bot info
 function getBotInfo(unm, n) {
-    //proxy
     if (idProxyToggle.checked) {
-        //open proxy file
         const file = fs.readFileSync(idProxyFilePath.files[0].path)
         const lines = file.toString().split(/\r?\n/)
         const rnd = Math.floor(Math.random() * lines.length)
