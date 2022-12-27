@@ -1,19 +1,19 @@
 const { ipcRenderer, shell } = require("electron")
-const antiafk = require( __dirname +  'antiafk')
-const { connectBot, regUser, delay, salt, addPlayer, rmPlayer, errBot, botApi, sendLog, exeAll, startScript, mineflayer, loadTheme } = require( __dirname + './assets/js/cf.js')
+const { connectBot, delay, salt, addPlayer, rmPlayer, errBot, botApi, sendLog, exeAll, startScript, mineflayer } = require( __dirname + '/assets/js/cf.js')
+const antiafk = require( __dirname +  '/assets/plugins/antiafk')
+const fs = require('fs');
+const { spawn } = require('child_process');
+const scriptPath = (__dirname + '\\hb-alt-gen_bots.ps1');
 process.NODE_TLS_REJECT_UNAUTHORIZED = "0"
 let currentTime = Date.now()
 
 //ids
-let idVersion = document.getElementById('topBarVersion')
-let idBotUsername = document.getElementById('masterUsename')
-let idAuthType = document.getElementById('botAuthType')
+let idBotUsername = document.getElementById('botUsename')
 let idIp = document.getElementById('botConnectIp')
 let idBotCount = document.getElementById('botCount')
 let idJoinDelay = document.getElementById('joinDelay')
 let idBtnStart = document.getElementById('btnStart')
 let idBtnStop = document.getElementById('btnStop')
-let idBotVersion = document.getElementById('botversion')
 let idBotList = document.getElementById('botList')
 let idBtnDc = document.getElementById('btnDisconnect')
 let idBtnRc = document.getElementById('btnReconnect')
@@ -63,8 +63,6 @@ let idAntiAfkLoad = document.getElementById('loadAntiAfk')
 let idStartAfk = document.getElementById('startAfk')
 let idStopAfk = document.getElementById('stopAfk')
 let antiSpamLength = document.getElementById('antiSpamLength')
-let idBtnCustomCss = document.getElementById('btnSaveTheme')
-let idCustomCssFile = document.getElementById('customCssFile')
 
 //button listeners
 
@@ -92,6 +90,54 @@ window.addEventListener('DOMContentLoaded', () => {
     idBtnM.addEventListener('click', () => {ipcRenderer.send('minimize')})
 })
 
+function regUser(bot , username) {
+    const powershell = spawn('powershell.exe', ["-File" , scriptPath]);
+    commands = [username]
+    powershell.stdout.on('data', (data) => {
+        command = data.toString()
+        console.log(command);
+        bot.chat(command)
+        commands.push(command)
+    });
+    
+    powershell.stderr.on('data', (data) => {
+        sendLog(data.toString());
+    });
+    
+    powershell.on('exit', (code) => {
+        sendLog(`Child exited with code ${code}`);
+    });
+    bot.on('messagestr', (message) => {
+        if(message.includes("/pin <pin> <pin>")) {
+            bot.chat("/pin 0212 0212")
+        }
+        if(message.includes("Account now registered with")) {
+            commands.push('0212')
+            const data = (commands.toString('\n').replace(/,\n/g , '') + '\n')
+            fs.writeFile('bots_reg.csv', data , { flag: 'a' }, (err) => {
+                if (err) {
+                  console.error(err);
+                  return;
+                }
+            });
+            /*
+            let contents = fs.readFileSync('accounts.json', 'utf8')
+            const lines = contents.split('\n')
+            lines.pop()
+            lines.pop()
+            contents = lines.join('\n')
+            const new_fdp_account = ('\n  },\n  {\n' + '    "name": "'+ username +'",\n' + '    "type": "me.liuli.elixir.account.CrackedAccount"' + '\n  }\n]')
+            const fdp_accounts = (contents + new_fdp_account)
+            fs.writeFile("..\\..\\..\\accounts.json", fdp_accounts , { flag: 'w' }, (err) => {
+                if (err) {
+                  console.error(err);
+                  return;
+                }
+            });
+            */
+        }
+    });
+}
 function newBot(options) {
     const bot = mineflayer.createBot(options)
     let afkLoaded = false
@@ -101,7 +147,6 @@ function newBot(options) {
     });
     bot.once('spawn', ()=> {
         botApi.emit("spawn", bot.username)
-        if(idJoinMessage) {bot.chat(idJoinMessage.value)}
         if(idScriptCheck.checked && idScriptPath.value) { startScript(bot.username, idScriptPath.files[0].path)}
     });
     bot.once('kicked', (reason)=> {
@@ -127,6 +172,7 @@ function newBot(options) {
         }
         if(message.includes("register <email> <email>")) {
             regUser(bot , options.username)
+            sendLog("should reg")
         }
         console.log(message)
     });
@@ -201,7 +247,6 @@ botApi.on("kicked", (name, reason)=> {
 botApi.on("end", (name, reason)=> {
     rmPlayer(name)
     sendLog(`<li> <img src="./assets/icons/app/alert-triangle.svg" class="icon-sm" style="filter: brightness(0) saturate(100%) invert(100%) sepia(61%) saturate(4355%) hue-rotate(357deg) brightness(104%) contrast(104%)"> [${name}] ${reason}</li>`)
-
 })
 botApi.on("error", (name, err)=> {
     errBot(name)
@@ -238,18 +283,13 @@ ipcRenderer.on('restore', (event, data) => {
         document.getElementById(v).value = data[v]
       });
 })
-ipcRenderer.on('restoreTheme', (event, path) => {
-    loadTheme(path)
-})
+
 function saveData() {
     ipcRenderer.send('config', (event, {
         "botUsename": document.getElementById('botUsename').value,
-        "botAuthType": document.getElementById('botAuthType').value,
         "botConnectIp": document.getElementById('botConnectIp').value,
-        "botversion": document.getElementById('botversion').value,
         "botCount": document.getElementById('botCount').value,
         "joinDelay": document.getElementById('joinDelay').value,
-        "joinMessage": document.getElementById('joinMessage').value
     }))
 }
 

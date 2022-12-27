@@ -1,9 +1,9 @@
 {
-  "name": "hb-bot",
-  "author": "huben_1337",
-  "maintainer": "huben_1337",
-  "version": "1.0",
-  "description": "Botting tool for herobrine.org",
+  "name": "trafficermc",
+  "author": "RattlesHyper",
+  "maintainer": "RattlesHyper",
+  "version": "1.9.2",
+  "description": "A Minecraft botting tool with Anti-AFK, Chat spammer, Inventory/Chest manager features.",
   "license": "MIT",
   "main": "main.js",
   "scripts": {
@@ -26,12 +26,12 @@
     "electron-builder": "^23.6.0"
   },
   "build": {
-    "appId": "com.huben1337.hb-bot",
-    "productName": "HB-BOT",
-    "copyright": "Copyright © 2022 huben_1337",
+    "appId": "com.rattleshyper.trafficermc",
+    "productName": "TrafficerMC",
+    "copyright": "Copyright © 2022 RattlesHyper",
     "win": {
       "target": "portable",
-      "publisherName": "huben_1337",
+      "publisherName": "RattlesHyper",
       "icon": "assets/icons/app/icon.png"
     },
     "linux": {

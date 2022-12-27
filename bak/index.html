@@ -8,11 +8,8 @@
       <div class="titlebar draggable">
          <div class=" center-elements">
             <img class="icon-sm"src="./assets/icons/app/icon.png">
-            <label>HB-BOT</label>
-         </div>
-         <div class="nodrag center-elements">
-            <img id="btnMinimize" class="btn minimize" src="./assets/icons/app/minus.svg">
-            <img id="btnClose" class="btn close" src="./assets/icons/app/x.svg">
+            <label>HB-BOT -- a fork of TrafficerMC</label>
+            <label id="topBarVersion" class="p-1"></label>
          </div>
       </div>
       <div class="sidebar tablink" >
@@ -33,11 +30,9 @@
          <div id="general" class="sideBtn">
             <div class="flex p-4">
                <span class="label">
-               <label class="label-text">Username:</label>
+               <label class="label-text">Master's Usersname:</label>
                </span>
-               <input id="botUsename" class="input" type="text" placeholder="(SALT) random 4 letters">
-               <span class="label">
-                  <label class="pl-4">(LEGIT) Generates legit names</label>
+               <input id="masterUsename" class="input" type="text" placeholder="Username">
             </div>
             <div class="flex p-4">
                <span class="label">
@@ -294,7 +289,7 @@
                <div class="flex">
                   <label class="container">
                   <label>Proxy file</label>
-                  <input id="useProxy" type="checkbox">
+                  <input id="useProxy" type="checkbox" checked="true">
                   <span class="checkmark"></span>
                   </label>
                   <input id="proxyFilePath" type="file" accept=".txt" class="pl-4"> 
@@ -305,7 +300,6 @@
                <span class="checkmark"></span>
                </label>
                <label class="container">
-               <label>Proxy type</label>
                </label>
             </div>
          </div>
@@ -313,6 +307,7 @@
       <div class="downbar flex">
          <span class="label"><img src="./assets/icons/app/user.svg" class="icon-sm"><label>Bots:</label><label id="downbarBotCount" class="m-1">0</label></span>
          <span class="label"><img src="./assets/icons/app/clock.svg" class="icon-sm"><label>Uptime:</label><label id="uptime" class="m-1">00:00</label></span>
+         <span id="outdatedVersion" class="label" style="display:none" onClick="shell.openExternal('https://github.com/RattlesHyper/TrafficerMC/releases')"><img src="./assets/icons/app/alert-triangle.svg" class="icon-sm error-icon"><label class="m-1 error-text" style="cursor: pointer">Outdated version</label></span>
       </div>
       <img class="bgimg" width="100%" >
    </body>

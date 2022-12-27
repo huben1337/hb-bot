@@ -5,8 +5,6 @@ const ProxyAgent = require('proxy-agent')
 const botApi = new EventEmitter()
 const fetch = require('node-fetch')
 const fs = require('fs')
-const { spawn } = require('child_process');
-const scriptPath = '.\\hb-alt-gen_bots.ps1';
 let stopBot = false
 
 //bot connect method
@@ -18,7 +16,11 @@ function connectBot() {
         if (idBotCount.value <= 1) {
             newBot(getBotInfo(idBotUsername.value, "0"))
         } else {
-            startWnoName()
+            if (idBotUsername.value) {
+                startWname()
+            } else {
+                startWnoName()
+            }
         }
     }
 }
@@ -37,7 +39,19 @@ async function startAccountFile(accountFile) {
         await delay(idJoinDelay.value ? idJoinDelay.value : 1000)
     }
 }
-
+async function startWname() {
+    for (var i = 0; i < idBotCount.value; i++) {
+        if (stopBot) break;
+        let options = getBotInfo(idBotUsername.value, i)
+        if (idBotUsername.value.includes("(SALT)") || idBotUsername.value.includes("(LEGIT)")) {
+            newBot(options)
+        } else {
+            options.username = options.username + "_" + i
+            newBot(options)
+        }
+        await delay(idJoinDelay.value ? idJoinDelay.value : 1000)
+    }
+}
 async function startWnoName() {
     for (var i = 0; i < idBotCount.value; i++) {
         if (stopBot) break;
@@ -47,7 +61,9 @@ async function startWnoName() {
 }
 
 //send bot info
-function getBotInfo(unm, n) {
+function getBotInfo(botName, n) {
+    let unm = "";
+    unm = botName.replaceAll("(SALT)", salt(4)).replaceAll("(LEGIT)", genName())
     if (idProxyToggle.checked) {
         const file = fs.readFileSync(idProxyFilePath.files[0].path)
         const lines = file.toString().split(/\r?\n/)
@@ -96,83 +112,30 @@ function getBotInfo(unm, n) {
             }),
             host: idIp.value.split(':')[0] ? idIp.value.split(':')[0] : "herobrine.org",
             port: idIp.value.split(':')[1] ? idIp.value.split(':')[1] : 25565,
-            username: unm ? unm : newUsername()
+            username: unm ? unm : newUsername(),
+            onMsaCode: function(data) {
+                sendLog(`<li> <img src="./assets/icons/app/code.svg" class="icon-sm" style="filter: brightness(0) saturate(100%) invert(28%) sepia(100%) saturate(359%) hue-rotate(172deg) brightness(93%) contrast(89%)">[${botName}] First time signing in. Please authenticate now: To sign in, use a web browser to open the page https://www.microsoft.com/link and enter the code: ${data.user_code} to authenticate. </li>`)
+            }
         };
         return options;
     } else {
         options = {
             host: idIp.value.split(':')[0] ? idIp.value.split(':')[0] : "herobrine.org",
             port: idIp.value.split(':')[1] ? idIp.value.split(':')[1] : 25565,
-            username: unm ? unm : newUsername()
+            username: unm ? unm : newUsername(),
+            onMsaCode: function(data) {
+                sendLog(`<li> <img src="./assets/icons/app/code.svg" class="icon-sm" style="filter: brightness(0) saturate(100%) invert(28%) sepia(100%) saturate(359%) hue-rotate(172deg) brightness(93%) contrast(89%)">[${botName}] First time signing in. Please authenticate now: To sign in, use a web browser to open the page https://www.microsoft.com/link and enter the code: ${data.user_code} to authenticate. </li>`)
+            }
         };
+
         return options;
     }
 }
-//new username
-function  newUsername() {
-    min = Math.ceil(5)
-    max = Math.floor(16)
-    var length = Math.floor(Math.random() * (max - min + 1)) + min
-    const characters ='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_'
-    let name = ''
-    const charactersLength = characters.length
-    for ( let i = 0; i < length; i++ ) {
-        name += characters.charAt(Math.floor(Math.random() * charactersLength))
-    }
-    console.log(name)
-    return name
-}
-//register new User
-function regUser(bot , username) {
-    const powershell = spawn('powershell.exe', [scriptPath]);
-    commands = [username]
-    powershell.stdout.on('data', (data) => {
-        command = data.toString()
-        console.log(command);
-        bot.chat(command)
-        commands.push(command)
-    });
-    
-    powershell.stderr.on('data', (data) => {
-        console.error(data.toString());
-    });
-    
-    powershell.on('exit', (code) => {
-        console.log(`Child exited with code ${code}`);
-    });
-    bot.on('messagestr', (message) => {
-        if(message.includes("/pin <pin> <pin>")) {
-            bot.chat("/pin 0212 0212")
-        }
-        if(message.includes("Account now registered with")) {
-            commands.push('0212')
-            const data = (commands.toString('\n').replace(/,\n/g , '') + '\n')
-            fs.writeFile('bots_reg.csv', data , { flag: 'a' }, (err) => {
-                if (err) {
-                  console.error(err);
-                  return;
-                }
-            });
-            let contents = fs.readFileSync('accounts.json', 'utf8')
-            const lines = contents.split('\n')
-            lines.pop()
-            lines.pop()
-            contents = lines.join('\n')
-            const new_fdp_account = ('\n  },\n  {\n' + '    "name": "'+ username +'",\n' + '    "type": "me.liuli.elixir.account.CrackedAccount"' + '\n  }\n]')
-            const fdp_accounts = (contents + new_fdp_account)
-            fs.writeFile("accounts.json", fdp_accounts , { flag: 'w' }, (err) => {
-                if (err) {
-                  console.error(err);
-                  return;
-                }
-            });
-        }
-    });
-}
+
 //random char
 function salt(length) {
     var result = '';
-    var characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    var characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_';
     for (var i = 0; i < length; i++) {
         result += characters.charAt(Math.floor(Math.random() * characters.length));
     }
@@ -265,4 +228,29 @@ async function startScript(botId, script) {
     }
 }
 
-module.exports = { getBotInfo, connectBot, regUser, salt, delay, addPlayer, rmPlayer, errBot, sendLog, exeAll, startScript, loadTheme, mineflayer, botApi }
+// name generator
+function genName() {
+    let name = ''
+    const words = ["Ace", "Aid", "Aim", "Air", "Ale", "Arm", "Art", "Awl", "Eel", "Ear", "Era", "Ice", "Ire", "Ilk", "Oar", "Oak", "Oat", "Oil", "Ore", "Owl", "Urn", "Web", "Cab", "Dab", "Jab", "Lab", "Tab", "Dad", "Fad", "Lad", "Mad", "Bag", "Gag", "Hag", "Lag", "Mag", "Rag", "Tag", "Pal", "Cam", "Dam", "Fam", "Ham", "Jam", "Ram", "Ban", "Can", "Fan", "Man", "Pan", "Tan", "Bap", "Cap", "Lap", "Pap", "Rap", "Sap", "Tap", "Yap", "Bar", "Car", "Jar", "Tar", "War", "Bat", "Cat", "Hat", "Mat", "Pat", "Tat", "Rat", "Vat", "Caw", "Jaw", "Law", "Maw", "Paw", "Bay", "Cay", "Day", "Hay", "Ray", "Pay", "Way", "Max", "Sax", "Tax", "Pea", "Sea", "Tea", "Bed", "Med", "Leg", "Peg", "Bee", "Lee", "Tee", "Gem", "Bet", "Jet", "Net", "Pet", "Set", "Den", "Hen", "Men", "Pen", "Ten", "Yen", "Dew", "Mew", "Pew", "Bib", "Fib", "Jib", "Rib", "Sib", "Bid", "Kid", "Lid", "Vid", "Tie", "Lie", "Pie", "Fig", "Jig", "Pig", "Rig", "Wig", "Dim", "Bin", "Din", "Fin", "Gin", "Pin", "Sin", "Tin", "Win", "Yin", "Dip", "Lip", "Pip", "Sip", "Tip", "Git", "Hit", "Kit", "Pit", "Wit", "Bod", "Cod", "God", "Mod", "Pod", "Rod", "Doe", "Foe", "Hoe", "Roe", "Toe", "Bog", "Cog", "Dog", "Fog", "Hog", "Jog", "Log", "Poi", "Con", "Son", "Ton", "Zoo", "Cop", "Hop", "Mop", "Pop", "Top", "Bot", "Cot", "Dot", "Lot", "Pot", "Tot", "Bow", "Cow", "Sow", "Row", "Box", "Lox", "Pox", "Boy", "Soy", "Toy", "Cub", "Nub", "Pub", "Sub", "Tub", "Bug", "Hug", "Jug", "Mug", "Rug", "Tug", "Bum", "Gum", "Hum", "Rum", "Tum", "Bun", "Gun", "Pun", "Run", "Sun", "Cup", "Pup", "Cut", "Gut", "Hut", "Nut", "Rut", "Egg", "Ego", "Elf", "Elm", "Emu", "End", "Era", "Eve", "Eye", "Ink", "Inn", "Ion", "Ivy", "Lye", "Dye", "Rye", "Pus", "Gym", "Her", "His", "Him", "Our", "You", "She", "Add", "Ail", "Are", "Eat", "Err", "Oil", "Use", "Nab", "Jab", "Bag", "Lag", "Nag", "Rag", "Sag", "Tag", "Wag", "Jam", "Ram", "Ran", "Tan", "Cap", "Lap", "Nap", "Rap", "Sap", "Tap", "Yap", "Mar", "Has", "Was", "Pat", "Sat", "Lay", "Pay", "Say", "Max", "Tax", "Fed", "See", "Get", "Let", "Net", "Met", "Pet", "Set", "Wet", "Mew", "Sew", "Lie", "Tie", "Bog", "Jog", "Boo", "Coo", "Moo", "Bop", "Hop", "Lop", "Mop", "Pop", "Top", "Sop", "Bow", "Mow", "Row", "Tow", "Dub", "Rub", "Dug", "Lug", "Tug", "Hum", "Sup", "Buy", "Got", "Jot", "Rot", "Nod", "Hem", "Led", "Wed", "Fib", "Jib", "Rib", "Did", "Dig", "Jig", "Rig", "Dip", "Nip", "Sip", "Rip", "Zip", "Gin", "Win", "Bit", "Hit", "Sit", "Won", "Pry", "Try", "Cry", "All", "Fab", "Bad", "Had", "Mad", "Rad", "Tad", "Far", "Fat", "Raw", "Lax", "Max", "Gay", "Big", "Dim", "Fit", "Red", "Wet", "Old", "New", "Hot", "Coy", "Fun", "Ill", "Odd", "Shy", "Dry", "Wry", "And", "But", "Yet", "For", "Nor", "The", "Not", "How", "Too", "Yet", "Now", "Off", "Any", "Out", "Bam", "Nah", "Yea", "Yep", "Naw", "Hey", "Yay", "Nay", "Pow", "Wow", "Moo", "Boo", "Bye", "Yum", "Ugh", "Bah", "Umm", "Why", "Aha", "Aye", "Hmm", "Hah", "Huh", "Ssh", "Brr", "Heh", "Oop", "Oof", "Zzz", "Gee", "Grr", "Yup", "Gah", "Mmm", "Dag", "Arr", "Eww", "Ehh"]
+    for (var i = 0; i < Math.floor(Math.random() * 4) + 2; i++) {
+        name += words[Math.floor(Math.random() * words.length)]
+    }
+    return name
+}
+
+//name gen v2
+function  newUsername() {
+    min = Math.ceil(5)
+    max = Math.floor(16)
+    var length = Math.floor(Math.random() * (max - min + 1)) + min
+    const characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_'
+    let name = ''
+    const charactersLength = characters.length
+    for ( let i = 0; i < length; i++ ) {
+        name += characters.charAt(Math.floor(Math.random() * charactersLength))
+    }
+    console.log(name)
+    return name
+}
+
+module.exports = { getBotInfo, connectBot, salt, delay, addPlayer, rmPlayer, errBot, sendLog, exeAll, startScript, genName, mineflayer, botApi }
