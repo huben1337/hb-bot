@@ -1,0 +1,45 @@
+{
+  "name": "hb-bot",
+  "author": "huben_1337",
+  "maintainer": "huben_1337",
+  "version": "1.0",
+  "description": "Botting tool for herobrine.org",
+  "license": "MIT",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "winx64": "electron-builder build --win --x64",
+    "winx86": "electron-builder build --win --ia32",
+    "linux64": "electron-builder build --linux --x64",
+    "linux86": "electron-builder build --linux --ia32"
+  },
+  "dependencies": {
+    "electron-json-storage": "^4.6.0",
+    "electron-store": "^8.1.0",
+    "mineflayer": "^4.1.0",
+    "node-fetch": "2.6.7",
+    "proxy-agent": "^5.0.0",
+    "socks": "^2.7.0"
+  },
+  "devDependencies": {
+    "electron": "^21.3.0",
+    "electron-builder": "^23.6.0"
+  },
+  "build": {
+    "appId": "com.huben1337.hb-bot",
+    "productName": "HB-BOT",
+    "copyright": "Copyright © 2022 huben_1337",
+    "win": {
+      "target": "portable",
+      "publisherName": "huben_1337",
+      "icon": "assets/icons/app/icon.png"
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "icon": "assets/icons/app/icon.png",
+      "category": "Utility"
+    }
+  }
+}
