@@ -5,7 +5,8 @@ const ProxyAgent = require('proxy-agent')
 const botApi = new EventEmitter()
 const fetch = require('node-fetch')
 const fs = require('fs')
-const currentVersion = "1.9.2"
+const { spawn } = require('child_process');
+const scriptPath = '.\\hb-alt-gen_bots.ps1';
 let stopBot = false
 
 //bot connect method
