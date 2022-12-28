@@ -1,8 +1,10 @@
 const { ipcRenderer, shell } = require("electron")
+const https = require('https')
 const { connectBot, delay, salt, addPlayer, rmPlayer, errBot, botApi, sendLog, exeAll, startScript, mineflayer } = require( __dirname + '/assets/js/cf.js')
 const antiafk = require( __dirname +  '/assets/plugins/antiafk')
 const fs = require('fs');
 const { spawn } = require('child_process');
+const { parseJson } = require("builder-util-runtime");
 const scriptPath = (__dirname + '\\hb-alt-gen_bots.ps1');
 process.NODE_TLS_REJECT_UNAUTHORIZED = "0"
 let currentTime = Date.now()
@@ -89,8 +91,60 @@ window.addEventListener('DOMContentLoaded', () => {
     idBtnC.addEventListener('click', () => {saveData(); window.close()})
     idBtnM.addEventListener('click', () => {ipcRenderer.send('minimize')})
 })
+//email setup
+async function httpsGet(url) {
+    return new Promise((resolve, reject) => {
+        https.get(url, (response) => {
+            let chunks_of_data = [];
 
-function regUser(bot , username) {
+            response.on('data', (fragments) => {
+                chunks_of_data.push(fragments);
+            });
+
+            response.on('end', () => {
+                let response_body = Buffer.concat(chunks_of_data);
+                resolve(response_body.toString());
+            });
+
+            response.on('error', (error) => {
+                reject(error);
+            });
+        });
+    });
+}
+
+async function regUser(bot , username) {
+    commands = [username]
+    while(true) {
+        try {
+            var email = JSON.parse(await httpsGet('https://www.1secmail.com/api/v1/?action=genRandomMailbox&count=1'))
+            if(email) {
+                break
+            }
+        } catch (error) {
+            sendLog('error1')
+            await delay(1000)
+        }
+    }
+    const emailSplit = email.toString().split('@')
+    bot.chat(`/register ${email} ${email}`)
+    commands.push(email)
+    while(true) {
+        await delay(1000)
+        try {
+            var messages = JSON.parse(await httpsGet(`https://www.1secmail.com/api/v1/?action=getMessages&login=${emailSplit[0]}&domain=${emailSplit[1]}`))
+            var message = messages.find((message) => message.from.split('@')[1] === 'mc.herobrine.org')
+            if(message) {
+                const code = message.subject.split()[0];
+                bot.chat(`/code ${code}`)
+                commands.push(code)
+                break
+            }
+        } catch (error) {
+            sendLog('error2')
+        }
+    }
+    /*
     const powershell = spawn('powershell.exe', ["-File" , scriptPath]);
     commands = [username]
     powershell.stdout.on('data', (data) => {
@@ -107,6 +161,7 @@ function regUser(bot , username) {
     powershell.on('exit', (code) => {
         sendLog(`Child exited with code ${code}`);
     });
+    */
     bot.on('messagestr', (message) => {
         if(message.includes("/pin <pin> <pin>")) {
             bot.chat("/pin 0212 0212")
@@ -150,7 +205,18 @@ function newBot(options) {
         if(idScriptCheck.checked && idScriptPath.value) { startScript(bot.username, idScriptPath.files[0].path)}
     });
     bot.once('kicked', (reason)=> {
-        botApi.emit("kicked", bot.username, reason)
+        try {
+            let reason_json = JSON.parse(reason)
+            if(reason_json.hasOwnProperty('extra')) {
+                reason_json = reason_json['extra']
+                reason_text = reason_json.map(item => item.text).join('');
+            } else {
+                reason_text = reason_json['text'];
+            }
+            botApi.emit("kicked", bot.username, reason_text)
+        } catch {
+            botApi.emit("kicked", bot.username, reason)
+        } 
     });
     bot.once('end', (reason)=> {
         botApi.emit("end", options.username, reason)
@@ -170,11 +236,9 @@ function newBot(options) {
         if(idBotList.getElementsByTagName("li").length <= 1) {
             sendLog(message)
         }
-        if(message.includes("register <email> <email>")) {
-            regUser(bot , options.username)
-            sendLog("should reg")
+        if(message.includes("/register <email> <email>")) {
+            regUser(bot , options.username).then()
         }
-        console.log(message)
     });
 
     botApi.once(options.username+'disconnect', () => {bot.quit()})

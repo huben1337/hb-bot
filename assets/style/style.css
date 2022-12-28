@@ -348,7 +348,7 @@ ul li {
     top: 5px;
     width: 5px;
     height: 10px;
-    border: solid rgb(var(--button-color));
+    border: solid rgb(100 200 50);
     border-width: 0 3px 3px 0;
     transform: rotate(45deg);
 }
