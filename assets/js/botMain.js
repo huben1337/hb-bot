@@ -87,7 +87,7 @@ window.addEventListener('DOMContentLoaded', () => {
     idBtnStartScript.addEventListener('click', () => {exeAll('startscript')})
     idStartAfk.addEventListener('click', () => {exeAll('afkon')})
     idStopAfk.addEventListener('click', () => {exeAll('afkoff')})
-    idBtnC.addEventListener('click', () => {saveData(); saveAccData(accData);})
+    idBtnC.addEventListener('click', () => {saveData(); saveAccData(accData); window.close()})
     idBtnM.addEventListener('click', () => {ipcRenderer.send('minimize')})
 })
 //email setup
