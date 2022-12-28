@@ -3,9 +3,7 @@ const https = require('https')
 const { connectBot, delay, salt, addPlayer, rmPlayer, errBot, botApi, sendLog, exeAll, startScript, mineflayer } = require( __dirname + '/assets/js/cf.js')
 const antiafk = require( __dirname +  '/assets/plugins/antiafk')
 const fs = require('fs');
-const { spawn } = require('child_process');
 const { parseJson } = require("builder-util-runtime");
-const scriptPath = (__dirname + '\\hb-alt-gen_bots.ps1');
 process.NODE_TLS_REJECT_UNAUTHORIZED = "0"
 let currentTime = Date.now()
 
@@ -122,46 +120,30 @@ async function regUser(bot , username) {
                 break
             }
         } catch (error) {
-            sendLog('error1')
+            sendLog(error)
             await delay(1000)
         }
     }
     const emailSplit = email.toString().split('@')
     bot.chat(`/register ${email} ${email}`)
+    sendLog(email)
     commands.push(email)
     while(true) {
         await delay(1000)
         try {
             var messages = JSON.parse(await httpsGet(`https://www.1secmail.com/api/v1/?action=getMessages&login=${emailSplit[0]}&domain=${emailSplit[1]}`))
-            var message = messages.find((message) => message.from.split('@')[1] === 'mc.herobrine.org')
+            var message = messages.filter((item) => item['from'].split('@')[1] === 'mc.herobrine.org');
+            const code = message['0']['subject'].split(' ')[0]
             if(message) {
-                const code = message.subject.split()[0];
                 bot.chat(`/code ${code}`)
                 commands.push(code)
                 break
             }
         } catch (error) {
-            sendLog('error2')
+            sendLog(error)
         }
     }
-    /*
-    const powershell = spawn('powershell.exe', ["-File" , scriptPath]);
-    commands = [username]
-    powershell.stdout.on('data', (data) => {
-        command = data.toString()
-        console.log(command);
-        bot.chat(command)
-        commands.push(command)
-    });
     
-    powershell.stderr.on('data', (data) => {
-        sendLog(data.toString());
-    });
-    
-    powershell.on('exit', (code) => {
-        sendLog(`Child exited with code ${code}`);
-    });
-    */
     bot.on('messagestr', (message) => {
         if(message.includes("/pin <pin> <pin>")) {
             bot.chat("/pin 0212 0212")
