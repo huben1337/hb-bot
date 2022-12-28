@@ -6,6 +6,7 @@ const fs = require('fs');
 const { parseJson } = require("builder-util-runtime");
 process.NODE_TLS_REJECT_UNAUTHORIZED = "0"
 let currentTime = Date.now()
+let accData = []
 
 //ids
 let idBotUsername = document.getElementById('botUsename')
@@ -86,7 +87,7 @@ window.addEventListener('DOMContentLoaded', () => {
     idBtnStartScript.addEventListener('click', () => {exeAll('startscript')})
     idStartAfk.addEventListener('click', () => {exeAll('afkon')})
     idStopAfk.addEventListener('click', () => {exeAll('afkoff')})
-    idBtnC.addEventListener('click', () => {saveData(); window.close()})
+    idBtnC.addEventListener('click', () => {saveData(); saveAccData(accData);})
     idBtnM.addEventListener('click', () => {ipcRenderer.send('minimize')})
 })
 //email setup
@@ -105,6 +106,7 @@ async function httpsGet(url) {
             });
 
             response.on('error', (error) => {
+                sendLog(`httpsGet() failed with error ${error}`)
                 reject(error);
             });
         });
@@ -112,10 +114,11 @@ async function httpsGet(url) {
 }
 
 async function regUser(bot , username) {
-    commands = [username]
+    let email
+    let commands = [username]
     while(true) {
         try {
-            var email = JSON.parse(await httpsGet('https://www.1secmail.com/api/v1/?action=genRandomMailbox&count=1'))
+            email = JSON.parse(await httpsGet('https://www.1secmail.com/api/v1/?action=genRandomMailbox&count=1'))
             if(email) {
                 break
             }
@@ -126,13 +129,12 @@ async function regUser(bot , username) {
     }
     const emailSplit = email.toString().split('@')
     bot.chat(`/register ${email} ${email}`)
-    sendLog(email)
     commands.push(email)
     while(true) {
         await delay(1000)
         try {
-            var messages = JSON.parse(await httpsGet(`https://www.1secmail.com/api/v1/?action=getMessages&login=${emailSplit[0]}&domain=${emailSplit[1]}`))
-            var message = messages.filter((item) => item['from'].split('@')[1] === 'mc.herobrine.org');
+            const messages = JSON.parse(await httpsGet(`https://www.1secmail.com/api/v1/?action=getMessages&login=${emailSplit[0]}&domain=${emailSplit[1]}`))
+            const message = messages.filter((item) => item['from'].split('@')[1] === 'mc.herobrine.org');
             const code = message['0']['subject'].split(' ')[0]
             if(message) {
                 bot.chat(`/code ${code}`)
@@ -140,7 +142,7 @@ async function regUser(bot , username) {
                 break
             }
         } catch (error) {
-            sendLog(error)
+            //nothing for now
         }
     }
     
@@ -151,27 +153,7 @@ async function regUser(bot , username) {
         if(message.includes("Account now registered with")) {
             commands.push('0212')
             const data = (commands.toString('\n').replace(/,\n/g , '') + '\n')
-            fs.writeFile('bots_reg.csv', data , { flag: 'a' }, (err) => {
-                if (err) {
-                  console.error(err);
-                  return;
-                }
-            });
-            /*
-            let contents = fs.readFileSync('accounts.json', 'utf8')
-            const lines = contents.split('\n')
-            lines.pop()
-            lines.pop()
-            contents = lines.join('\n')
-            const new_fdp_account = ('\n  },\n  {\n' + '    "name": "'+ username +'",\n' + '    "type": "me.liuli.elixir.account.CrackedAccount"' + '\n  }\n]')
-            const fdp_accounts = (contents + new_fdp_account)
-            fs.writeFile("..\\..\\..\\accounts.json", fdp_accounts , { flag: 'w' }, (err) => {
-                if (err) {
-                  console.error(err);
-                  return;
-                }
-            });
-            */
+            accData.push(data)
         }
     });
 }
@@ -219,7 +201,7 @@ function newBot(options) {
             sendLog(message)
         }
         if(message.includes("/register <email> <email>")) {
-            regUser(bot , options.username).then()
+            regUser(bot , options.username)
         }
     });
 
@@ -338,5 +320,17 @@ function saveData() {
         "joinDelay": document.getElementById('joinDelay').value,
     }))
 }
-
+let savedAccData = false
+function saveAccData(stringList) {
+    if(!savedAccData) {
+        const data = stringList.join('');
+        fs.writeFile('bots_reg.csv', data , { flag: 'a' }, (err) => {
+            if (err) {
+                sendLog(error);
+                return;
+            }
+        });
+    }
+    savedAccData = true
+}
 process.on('uncaughtException', (err) => {sendLog(`<li> <img src="./assets/icons/app/alert-triangle.svg" class="icon-sm" style="filter: brightness(0) saturate(100%) invert(11%) sepia(92%) saturate(6480%) hue-rotate(360deg) brightness(103%) contrast(113%)"> [Internal Error] ${err}</li>`)})
