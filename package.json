@@ -26,12 +26,12 @@
     "electron-builder": "^23.6.0"
   },
   "build": {
-    "appId": "com.rattleshyper.trafficermc",
-    "productName": "TrafficerMC",
+    "appId": "com.huben1337.hb-bot",
+    "productName": "HB-BOT",
     "copyright": "Copyright © 2022 RattlesHyper",
     "win": {
       "target": "portable",
-      "publisherName": "RattlesHyper",
+      "publisherName": "huben_1337",
       "icon": "assets/icons/app/icon.png"
     },
     "linux": {
