@@ -157,12 +157,64 @@ async function regUser(bot , username) {
         }
     });
 }
+
+function addControlls(options, bot) {
+    botApi.once(bot.username+'disconnect', () => {bot.quit()})
+    botApi.once(bot.username+'reconnect', () => {newBot(options)})
+    botApi.on(bot.username+'chat', (o) => { if(idCheckAntiSpam.checked) { bot.chat(o.replaceAll("(SALT)", salt(4))+" "+salt(antiSpamLength.value ? antiSpamLength.value : 5)) } else { bot.chat(o.replaceAll("(SALT)", salt(4))) } })
+    botApi.on(bot.username+'useheld', () => {bot.activateItem()})
+    botApi.on(bot.username+'closewindow', () => {bot.closeWindow(window)})
+    botApi.on(bot.username+'sethotbar', (o) => {bot.setQuickBarSlot(o)})
+    botApi.on(bot.username+'winclick', (o, i) => {if(i == 0) {bot.clickWindow(o, 0, 0)} else {bot.clickWindow(o, 1, 0)}})
+    botApi.on(bot.username+'stopcontrol', (o) => {bot.setControlState(o, false)})
+    botApi.on(bot.username+'look', (o) => {bot.look(o, 0)})
+    botApi.on(bot.username+'sprintcheck', (o) => {bot.setControlState('sprint', o)})
+    botApi.on(bot.username+'startscript', () => {startScript(bot.username, idScriptPath.files[0].path)})
+    
+    botApi.on(bot.username+'afkon', () => {
+        if(!afkLoaded) {
+            afkLoaded = true
+            bot.loadPlugin(antiafk)
+            bot.afk.start()
+        } else {
+            bot.afk.start()
+        }
+    })
+    botApi.on(bot.username+'afkoff', () => {bot.afk.stop()})
+
+    botApi.on(bot.username+'drop', (o) => {
+        if(o) {
+            bot.clickWindow(o, 0, 0)
+            bot.clickWindow(-999, 0, 0)
+        } else {
+            tossAll()
+            async function tossAll() {
+                const itemCount = bot.inventory.items().length
+                for (var i = 0; i < itemCount; i++) {
+                    if (bot.inventory.items().length === 0) return
+                    const item = bot.inventory.items()[0]
+                    bot.tossStack(item)
+                    await delay(10)
+                }
+              }
+        }
+    })
+
+    botApi.on(bot.username+'startcontrol', (o) => {
+        bot.setControlState(o, true)
+        if(idCheckSprint.checked === true) {bot.setControlState('sprint', true)} else {bot.setControlState('sprint', false)}
+    })
+
+    idBtnRc.addEventListener('click', () => {botApi.emit(bot.username+'reconnect')})
+}
+
 function newBot(options) {
     const bot = mineflayer.createBot(options)
     let afkLoaded = false
 
     bot.once('login', ()=> {
         botApi.emit("login", bot.username)
+        addControlls(options, bot)
     });
     bot.once('spawn', ()=> {
         botApi.emit("spawn", bot.username)
@@ -205,53 +257,6 @@ function newBot(options) {
         }
     });
 
-    botApi.once(options.username+'disconnect', () => {bot.quit()})
-    botApi.once(options.username+'reconnect', () => {newBot(options)})
-    botApi.on(options.username+'useheld', () => {bot.activateItem()})
-    botApi.on(options.username+'closewindow', () => {bot.closeWindow(window)})
-    botApi.on(options.username+'chat', (o) => { if(idCheckAntiSpam.checked) { bot.chat(o.replaceAll("(SALT)", salt(4))+" "+salt(antiSpamLength.value ? antiSpamLength.value : 5)) } else { bot.chat(o.replaceAll("(SALT)", salt(4))) } })
-    botApi.on(options.username+'sethotbar', (o) => {bot.setQuickBarSlot(o)})
-    botApi.on(options.username+'winclick', (o, i) => {if(i == 0) {bot.clickWindow(o, 0, 0)} else {bot.clickWindow(o, 1, 0)}})
-    botApi.on(options.username+'stopcontrol', (o) => {bot.setControlState(o, false)})
-    botApi.on(options.username+'look', (o) => {bot.look(o, 0)})
-    botApi.on(options.username+'sprintcheck', (o) => {bot.setControlState('sprint', o)})
-    botApi.on(options.username+'startscript', () => {startScript(bot.username, idScriptPath.files[0].path)})
-    
-    botApi.on(options.username+'afkon', () => {
-        if(!afkLoaded) {
-            afkLoaded = true
-            bot.loadPlugin(antiafk)
-            bot.afk.start()
-        } else {
-            bot.afk.start()
-        }
-    })
-    botApi.on(options.username+'afkoff', () => {bot.afk.stop()})
-
-    botApi.on(options.username+'drop', (o) => {
-        if(o) {
-            bot.clickWindow(o, 0, 0)
-            bot.clickWindow(-999, 0, 0)
-        } else {
-            tossAll()
-            async function tossAll() {
-                const itemCount = bot.inventory.items().length
-                for (var i = 0; i < itemCount; i++) {
-                    if (bot.inventory.items().length === 0) return
-                    const item = bot.inventory.items()[0]
-                    bot.tossStack(item)
-                    await delay(10)
-                }
-              }
-        }
-    })
-
-    botApi.on(options.username+'startcontrol', (o) => {
-        bot.setControlState(o, true)
-        if(idCheckSprint.checked === true) {bot.setControlState('sprint', true)} else {bot.setControlState('sprint', false)}
-    })
-
-    idBtnRc.addEventListener('click', () => {botApi.emit(options.username+'reconnect')})
 }
 
 botApi.on('spam', (msg, dl) => {

@@ -3,7 +3,7 @@
   "author": "huben1337",
   "maintainer": "huben1337",
   "version": "1.0.1",
-  "description": "A Minecraft botting for herobrine.org.",
+  "description": "A Minecraft botting tool for herobrine.org.",
   "license": "MIT",
   "main": "main.js",
   "scripts": {
