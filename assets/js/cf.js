@@ -192,16 +192,12 @@ function exeAll(command, a1, a2) {
             startcmd(a1, a2)
         }
         if (e[i].classList.value.includes("botSelected")) {
-                sendLog(e[i].innerHTML)
             list.push(e[i].innerHTML + command)
         }
     }
 
     async function startcmd(a1, a2) {
         for (var i = 0; i < list.length; i++) {
-            sendLog(a1)
-            sendLog(a2)
-            sendLog(list[i])
             botApi.emit(list[i], a1, a2)
             await delay(idLinearValue.value)
         }
