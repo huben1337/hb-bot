@@ -209,12 +209,14 @@ function addControlls(options, bot) {
 }
 
 function newBot(options) {
+    let usrname = options.username
     const bot = mineflayer.createBot(options)
     let afkLoaded = false
 
     bot.once('login', ()=> {
         botApi.emit("login", bot.username)
         addControlls(options, bot)
+        usrname = bot.username
     });
     bot.once('spawn', ()=> {
         botApi.emit("spawn", bot.username)
@@ -235,7 +237,7 @@ function newBot(options) {
         } 
     });
     bot.once('end', (reason)=> {
-        botApi.emit("end", options.username, reason)
+        botApi.emit("end", usrname, reason)
         if(idCheckAutoRc.checked === true) {
             recon()
             async function recon() {
@@ -245,7 +247,7 @@ function newBot(options) {
         }
     });
     bot.once('error', (err)=> {
-        botApi.emit("error", options.username, err)
+        botApi.emit("error", usrname, err)
     });
     
     bot.on('messagestr', (message) => {
@@ -253,7 +255,7 @@ function newBot(options) {
             sendLog(message)
         }
         if(message.includes("/register <email> <email>")) {
-            regUser(bot , options.username)
+            regUser(bot , usrname)
         }
     });
 
