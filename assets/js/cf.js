@@ -180,25 +180,27 @@ function sendLog(log) {
     idChatBox.scrollTop = idChatBox.scrollHeight
 }
 
-//execute command all bots
-function exeAll(command, a1, a2) {
-    let e = idBotList.getElementsByTagName("li")
-    if (e.length === 0) return;
-    let l = e.length
-    let list = ["BLANK"]
+function listBots() {
+    const botList = idBotList.getElementsByTagName("li")
+    const len = botList.length
+    if (len === 0) return;
+    let list = []
 
-    for (var i = 0; i < l; i++) {
-        if (i + 1 === l) {
-            startcmd(a1, a2)
-        }
-        if (e[i].classList.value.includes("botSelected")) {
-            list.push(e[i].innerHTML + command)
+    for (var i = 0; i < len; i++) {
+        if (botList[i].classList.value.includes("botSelected")) {
+            list.push(botList[i].innerHTML)
         }
     }
+    return list  
+}
 
+//execute command all bots
+function exeAll(command, a1, a2) {
+    const list = listBots()
+    startcmd(a1, a2)
     async function startcmd(a1, a2) {
         for (var i = 0; i < list.length; i++) {
-            botApi.emit(list[i], a1, a2)
+            botApi.emit((list[i] + command), a1, a2)
             await delay(idLinearValue.value)
             if(command === 'reconnect') {
                 await delay(idJoinDelay.value ? idJoinDelay.value : 1000)
@@ -206,6 +208,62 @@ function exeAll(command, a1, a2) {
         }
     }
     sendLog(`<li> <img src="./assets/icons/app/code.svg" class="icon-sm" style="filter: brightness(0) saturate(100%) invert(28%) sepia(100%) saturate(359%) hue-rotate(172deg) brightness(93%) contrast(89%)"> [${command}] ${a1? a1: ""} ${a2 ? a2: ""} </li>`)
+}
+
+function addLeader(name) {
+    const b = document.createElement("li")
+    b.id = "plist" + name
+    b.innerHTML = name
+    idLeaderList.appendChild(b)
+    idLeaderList.scrollTop = idLeaderList.scrollHeight
+}
+
+function resetParty() {
+    const leaderList = idLeaderList.getElementsByTagName("li") 
+    const len = leaderList.length
+    if (len === 0) return;
+    for (var i = 0; i < len; i++) {
+        const name = leaderList[i].innerHTML
+        botApi.emit((name + 'chat'), '/party leave')
+        if (document.getElementById("plist" + name)) document.getElementById("plist" + name).remove()
+    }
+}
+
+function makeParty(size) {
+    let leaderList = idLeaderList.getElementsByTagName("li") 
+    const list = listBots()
+    let leader
+    let j = 0
+    const k = (size ? size: 4)
+    startcmd()
+    async function startcmd() {
+        for (var i = 0; i < list.length; i++) {
+            if((i-j) % k === 0) {
+                let popLL
+                try {
+                    popLL =  leaderList.pop()
+
+                } catch (error) {
+                    leader = list[i]
+                }
+                leader = popLL ? popLL: list[i]
+                if(leader === popLL) {
+                    j += 1
+                }
+                addLeader(leader)
+            } else {
+                const invmsg = `/party invite ${list[i]}`
+                const acptmsg = `/party accept ${leader}`
+                botApi.emit((leader + 'chat'), invmsg)
+                sendLog(invmsg)
+                await delay(1000)
+                botApi.emit((list[i] + 'chat'), acptmsg)
+                sendLog(acptmsg)
+                await delay(600)
+            }
+            await delay(idLinearValue.value)
+        }
+    }
 }
 
 function updateBotCount() {
@@ -256,4 +314,4 @@ function  newUsername() {
     return name
 }
 
-module.exports = { getBotInfo, connectBot, salt, delay, addPlayer, rmPlayer, errBot, sendLog, exeAll, startScript, genName, mineflayer, botApi }
+module.exports = { getBotInfo, connectBot, salt, delay, addPlayer, rmPlayer, errBot, sendLog, exeAll, makeParty, addLeader, resetParty, startScript, genName, mineflayer, botApi }

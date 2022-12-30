@@ -82,6 +82,7 @@
                      <button class="button funcBtnLink" onclick="openFuncs(event,'look')">Look</button>
                      <button class="button funcBtnLink" onclick="openFuncs(event,'drop')">Drop</button>
                      <button class="button funcBtnLink" onclick="openFuncs(event,'antiafk')">Anti-AFK</button>
+                     <button class="button funcBtnLink" onclick="openFuncs(event,'partition')">Split in Partys</button>
                   </ul>
                </div>
                <div class="bottingContentArea pl-4">
@@ -235,6 +236,23 @@
                            <button id="startAfk" class="button">Start</button>
                            <button id="stopAfk" class="button">Stop</button>
                         </div>
+                     </div>
+                  </div>
+                  <div id="partition" class="functsBtn" style="display:none">
+                     <div class="input-group center-elements flex-colum">
+                        <span class="label">
+                           <label class="label-text">Create Partys</label>
+                           </span>
+                        <div class="center-elements input-group">
+                           <input id="addLeader" class="input" type="text" style="width: 164px;" placeholder="Party leader (optional)">
+                           <button id="btnaddLeader" class="button" style="padding: 5px 9px;">+</button>
+                        </div>
+                        <input id="partySize" class="input" type="number" placeholder="Party size">
+                        <div class="flex center-elements mu-4">
+                           <button id="partyMake" class="button" style="padding: 5px 15px;">Partition</button>
+                           <button id="partyReset" class="button" style="padding: 5px 15px;">Reset</button>
+                        </div>
+                        <ul id="leaderList" class="flex-colum" style="width: 198px; height:70px;"></ul>
                      </div>
                   </div>
                </div>

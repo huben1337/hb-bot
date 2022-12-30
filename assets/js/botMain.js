@@ -1,6 +1,6 @@
 const { ipcRenderer, shell } = require("electron")
 const https = require('https')
-const { connectBot, delay, salt, addPlayer, rmPlayer, errBot, botApi, sendLog, exeAll, startScript, mineflayer } = require( __dirname + '/assets/js/cf.js')
+const { connectBot, delay, salt, addPlayer, rmPlayer, errBot, botApi, sendLog, exeAll, makeParty, addLeader, resetParty, startScript, mineflayer } = require( __dirname + '/assets/js/cf.js')
 const antiafk = require( __dirname +  '/assets/plugins/antiafk')
 const fs = require('fs');
 const { parseJson } = require("builder-util-runtime");
@@ -64,9 +64,14 @@ let idAntiAfkLoad = document.getElementById('loadAntiAfk')
 let idStartAfk = document.getElementById('startAfk')
 let idStopAfk = document.getElementById('stopAfk')
 let antiSpamLength = document.getElementById('antiSpamLength')
+let idPartySize = document.getElementById('partySize')
+let idBtnPartyMake = document.getElementById('partyMake')
+let idBtnPartyReset = document.getElementById('partyReset')
+let idAddLeader = document.getElementById('addLeader')
+let idBtnAddLeader = document.getElementById('btnaddLeader')
+let idLeaderList = document.getElementById('leaderList')
 
 //button listeners
-
 window.addEventListener('DOMContentLoaded', () => {
     botApi.setMaxListeners(0)
     idBtnStart.addEventListener('click', () => {connectBot(); saveData()})
@@ -88,9 +93,23 @@ window.addEventListener('DOMContentLoaded', () => {
     idBtnStartScript.addEventListener('click', () => {exeAll('startscript')})
     idStartAfk.addEventListener('click', () => {exeAll('afkon')})
     idStopAfk.addEventListener('click', () => {exeAll('afkoff')})
+    idBtnAddLeader.addEventListener('click', () => {addLeader(idAddLeader.value)})
+    idBtnPartyMake.addEventListener('click', () => {makeParty(idPartySize.value)})
+    idBtnPartyReset.addEventListener('click', () => {resetParty()})
     idBtnC.addEventListener('click', () => {saveData(); saveAccData(accData); window.close()})
     idBtnM.addEventListener('click', () => {ipcRenderer.send('minimize')})
 })
+
+let oldLogins
+fs.readFile('bots_reg.csv', (error, data) => {
+    if (error) {
+      console.log(error);
+      return;
+    }
+    const rows = data.toString().split('\n')
+    oldLogins = rows
+});
+
 //email setup
 async function httpsGet(url) {
     return new Promise((resolve, reject) => {
@@ -157,6 +176,18 @@ async function regUser(bot , username) {
             accData.push(data)
         }
     });
+}
+
+async function loginUser(bot, usrname) {
+    const unm = usrname.replaceAll('.' , '')
+    sendLog(`Logging in ${unm}`)
+    try {
+        const list = oldLogins.filter(inner => inner.includes(unm))
+        const email = list.toString().split(',')[1]
+        bot.chat(`/login ${email} 0212`)
+    } catch (error) {
+        bot.quit()
+    }
 }
 
 function addControlls(options, bot) {
@@ -251,11 +282,14 @@ function newBot(options) {
     });
     
     bot.on('messagestr', (message) => {
-        if(idBotList.getElementsByTagName("li").length <= 1) {
+        if(idBotList.getElementsByTagName("li").length <= 2) {
             sendLog(message)
         }
         if(message.includes("/register <email> <email>")) {
             regUser(bot , usrname)
+        }
+        if(message.includes("Login with your email address and PIN")) {
+            loginUser(bot , usrname)
         }
     });
 
