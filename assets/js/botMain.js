@@ -72,6 +72,7 @@ window.addEventListener('DOMContentLoaded', () => {
     idBtnStart.addEventListener('click', () => {connectBot(); saveData()})
     idBtnStop.addEventListener('click', () => {botApi.emit('stopBots')})
     idBtnDc.addEventListener('click', () => {exeAll("disconnect")})
+    idBtnRc.addEventListener('click', () => {exeAll("reconnect")})
     idBtnUse.addEventListener('click', () => {exeAll("useheld")})
     idBtnClose.addEventListener('click', () => {exeAll("closewindow")})
     idBtnSpam.addEventListener('click', () => {botApi.emit("spam", idSpamMessage.value, idSpamDelay.value)})
@@ -160,7 +161,7 @@ async function regUser(bot , username) {
 
 function addControlls(options, bot) {
     botApi.once(bot.username+'disconnect', () => {bot.quit()})
-    botApi.once(bot.username+'reconnect', () => {newBot(options)})
+    botApi.once(bot.username+'reconnect', () => {bot.quit(); const r = async () => {await delay(500); newBot(options)}; r()})
     botApi.on(bot.username+'chat', (o) => { if(idCheckAntiSpam.checked) { bot.chat(o.replaceAll("(SALT)", salt(4))+" "+salt(antiSpamLength.value ? antiSpamLength.value : 5)) } else { bot.chat(o.replaceAll("(SALT)", salt(4))) } })
     botApi.on(bot.username+'useheld', () => {bot.activateItem()})
     botApi.on(bot.username+'closewindow', () => {bot.closeWindow(window)})
@@ -204,8 +205,6 @@ function addControlls(options, bot) {
         bot.setControlState(o, true)
         if(idCheckSprint.checked === true) {bot.setControlState('sprint', true)} else {bot.setControlState('sprint', false)}
     })
-
-    idBtnRc.addEventListener('click', () => {botApi.emit(bot.username+'reconnect')})
 }
 
 function newBot(options) {
@@ -241,7 +240,8 @@ function newBot(options) {
         if(idCheckAutoRc.checked === true) {
             recon()
             async function recon() {
-                await delay(idReconDelay.value)
+                await delay(idReconDelay.value ? idReconDelay.value : 1000)
+                rmPlayer(usrname)
                 newBot(options)
             }
         }

@@ -200,6 +200,9 @@ function exeAll(command, a1, a2) {
         for (var i = 0; i < list.length; i++) {
             botApi.emit(list[i], a1, a2)
             await delay(idLinearValue.value)
+            if(command === 'reconnect') {
+                await delay(idJoinDelay.value ? idJoinDelay.value : 1000)
+            }
         }
     }
     sendLog(`<li> <img src="./assets/icons/app/code.svg" class="icon-sm" style="filter: brightness(0) saturate(100%) invert(28%) sepia(100%) saturate(359%) hue-rotate(172deg) brightness(93%) contrast(89%)"> [${command}] ${a1? a1: ""} ${a2 ? a2: ""} </li>`)
