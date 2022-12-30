@@ -212,6 +212,7 @@ function exeAll(command, a1, a2) {
 
 function addLeader(name) {
     const b = document.createElement("li")
+    sendLog(name)
     b.id = "plist" + name
     b.innerHTML = name
     idLeaderList.appendChild(b)
@@ -221,11 +222,14 @@ function addLeader(name) {
 function resetParty() {
     const leaderList = idLeaderList.getElementsByTagName("li") 
     const len = leaderList.length
+    let leaders = []
     if (len === 0) return;
     for (var i = 0; i < len; i++) {
-        const name = leaderList[i].innerHTML
-        botApi.emit((name + 'chat'), '/party leave')
-        if (document.getElementById("plist" + name)) document.getElementById("plist" + name).remove()
+        leaders.push(leaderList[i].innerHTML)  
+    }
+    for(var i = 0; i < len; i++) {
+        if (document.getElementById("plist" + leaders[i])) document.getElementById("plist" + leaders[i]).remove()
+        botApi.emit((leaders[i] + 'chat'), '/party leave')
     }
 }
 
@@ -241,15 +245,13 @@ function makeParty(size) {
             if((i-j) % k === 0) {
                 let popLL
                 try {
-                    popLL =  leaderList.pop()
+                    popLL = leaderList.pop()
+                    j += 1
 
                 } catch (error) {
                     leader = list[i]
                 }
                 leader = popLL ? popLL: list[i]
-                if(leader === popLL) {
-                    j += 1
-                }
                 addLeader(leader)
             } else {
                 const invmsg = `/party invite ${list[i]}`
