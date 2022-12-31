@@ -151,7 +151,7 @@ async function checkMail(emailSplit) {
 async function regUser(bot , usrname) {
     let email
     let commands = [usrname]
-    sendLog(`Logging in ${usrname}`)
+    sendLog(`Registering ${usrname}`)
     while(true) {
         try {
             email = JSON.parse(await httpsGet('https://www.1secmail.com/api/v1/?action=genRandomMailbox&count=1'))
