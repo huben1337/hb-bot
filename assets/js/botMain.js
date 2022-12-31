@@ -132,9 +132,25 @@ async function httpsGet(url) {
     });
 }
 
-async function regUser(bot , username) {
+async function checkMail(emailSplit) {
+    while(true) {
+        await delay(1000)
+        try {
+            const messages = JSON.parse(await httpsGet(`https://www.1secmail.com/api/v1/?action=getMessages&login=${emailSplit[0]}&domain=${emailSplit[1]}`))
+            const message = messages.filter((item) => item['from'].split('@')[1] === 'mc.herobrine.org');
+            const code = message['0']['subject'].split(' ')[0]
+            if(message) {
+                return code
+            }
+        } catch (error) {
+            //nothing for now
+        }
+    }
+}
+
+async function regUser(bot , usrname) {
     let email
-    let commands = [username]
+    let commands = [usrname]
     while(true) {
         try {
             email = JSON.parse(await httpsGet('https://www.1secmail.com/api/v1/?action=genRandomMailbox&count=1'))
@@ -149,22 +165,10 @@ async function regUser(bot , username) {
     const emailSplit = email.toString().split('@')
     bot.chat(`/register ${email} ${email}`)
     commands.push(email)
-    while(true) {
-        await delay(1000)
-        try {
-            const messages = JSON.parse(await httpsGet(`https://www.1secmail.com/api/v1/?action=getMessages&login=${emailSplit[0]}&domain=${emailSplit[1]}`))
-            const message = messages.filter((item) => item['from'].split('@')[1] === 'mc.herobrine.org');
-            const code = message['0']['subject'].split(' ')[0]
-            if(message) {
-                bot.chat(`/code ${code}`)
-                commands.push(code)
-                break
-            }
-        } catch (error) {
-            //nothing for now
-        }
-    }
-    
+    const code = (await checkMail(emailSplit))
+    bot.chat(`/code ${code}`)
+    commands.push(code)
+
     bot.on('messagestr', (message) => {
         if(message.includes("/pin <pin> <pin>")) {
             bot.chat("/pin 0212 0212")
@@ -177,7 +181,28 @@ async function regUser(bot , username) {
     });
 }
 
-async function loginUser(bot, usrname) {
+async function emailLoginUser(bot, usrname) {
+    const unm = usrname.replaceAll('.' , '')
+    sendLog(`Logging in ${unm}`)
+    try {
+        const list = oldLogins.filter(inner => inner.includes(unm))
+        const email = list.toString().split(',')[1]
+        const emailSplit = email.split('@')
+        sendLog(email)
+        bot.chat(`/login ${email}`)
+        const code = (await checkMail(emailSplit))
+        bot.chat(`/code ${code}`)
+        bot.on('messagestr', (message) => {
+            if(message.includes("You have verified your login.")) {
+                bot.chat("/pin 0212 0212")
+            }
+        });
+    } catch (error) {
+        bot.quit()
+    }
+}
+
+async function pinLoginUser(bot, usrname) {
     const unm = usrname.replaceAll('.' , '')
     sendLog(`Logging in ${unm}`)
     try {
@@ -288,7 +313,10 @@ function newBot(options) {
             regUser(bot , usrname)
         }
         if(message.includes("Login with your email address and PIN")) {
-            loginUser(bot , usrname)
+            pinLoginUser(bot , usrname)
+        }
+        if(message.includes("Login with your email address. Press")) {
+            emailLoginUser(bot , usrname)
         }
     });
 
