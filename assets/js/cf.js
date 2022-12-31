@@ -195,8 +195,8 @@ function listBots() {
 }
 
 //execute command all bots
-function exeAll(command, a1, a2) {
-    const list = listBots()
+function exeAll(command, a1, a2, botList) {
+    const list = (botList ? botList: listBots())
     startcmd(a1, a2)
     async function startcmd(a1, a2) {
         for (var i = 0; i < list.length; i++) {
@@ -210,9 +210,20 @@ function exeAll(command, a1, a2) {
     sendLog(`<li> <img src="./assets/icons/app/code.svg" class="icon-sm" style="filter: brightness(0) saturate(100%) invert(28%) sepia(100%) saturate(359%) hue-rotate(172deg) brightness(93%) contrast(89%)"> [${command}] ${a1? a1: ""} ${a2 ? a2: ""} </li>`)
 }
 
+function listLeaders() {
+    const leaderList = idLeaderList.getElementsByTagName("li") 
+    const len = leaderList.length
+    let leaders = []
+    for (var i = 0; i < len; i++) {
+        leaders.push(leaderList[i].innerHTML)  
+    }
+    return leaders
+}
+
 function addLeader(name) {
+    if(name === '') return
     const b = document.createElement("li")
-    sendLog(name)
+    sendLog(`Adding to ${name}'s party`)
     b.id = "plist" + name
     b.innerHTML = name
     idLeaderList.appendChild(b)
@@ -220,50 +231,43 @@ function addLeader(name) {
 }
 
 function resetParty() {
-    const leaderList = idLeaderList.getElementsByTagName("li") 
-    const len = leaderList.length
-    let leaders = []
-    if (len === 0) return;
-    for (var i = 0; i < len; i++) {
-        leaders.push(leaderList[i].innerHTML)  
-    }
-    for(var i = 0; i < len; i++) {
-        if (document.getElementById("plist" + leaders[i])) document.getElementById("plist" + leaders[i]).remove()
-        botApi.emit((leaders[i] + 'chat'), '/party leave')
+    const leaderList = listLeaders()
+    if (leaderList.length === 0) return
+    for(var i = 0; i < leaderList.length; i++) {
+        if (document.getElementById("plist" + leaderList[i])) document.getElementById("plist" + leaderList[i]).remove()
+        botApi.emit((leaderList[i] + 'chat'), '/party leave')
     }
 }
 
 function makeParty(size) {
-    let leaderList = idLeaderList.getElementsByTagName("li") 
-    const list = listBots()
+    var leaderList = listLeaders()
+    var list = listBots()
     let leader
-    let j = 0
-    const k = (size ? size: 4)
+    const s = size ? size: 4
+    let j = s
     startcmd()
     async function startcmd() {
         for (var i = 0; i < list.length; i++) {
-            if((i-j) % k === 0) {
-                let popLL
-                try {
-                    popLL = leaderList.pop()
-                    j += 1
-
-                } catch (error) {
-                    leader = list[i]
+            if(i == (list.length - 1) && !(leaderList.length == 1)) return
+            if(j == s) {
+                if(leaderList.length > 0) {
+                    leader = leaderList.pop()
+                } else {
+                    leader = list.pop()
                 }
-                leader = popLL ? popLL: list[i]
                 addLeader(leader)
-            } else {
-                const invmsg = `/party invite ${list[i]}`
-                const acptmsg = `/party accept ${leader}`
-                botApi.emit((leader + 'chat'), invmsg)
-                sendLog(invmsg)
-                await delay(1000)
-                botApi.emit((list[i] + 'chat'), acptmsg)
-                sendLog(acptmsg)
-                await delay(600)
+                j = 1
             }
+            const invmsg = `/party invite ${list[i]}`
+            const acptmsg = `/party accept ${leader}`
+            botApi.emit((leader + 'chat'), invmsg)
+            sendLog(invmsg)
+            await delay(1000)
+            botApi.emit((list[i] + 'chat'), acptmsg)
+            sendLog(acptmsg)
+            await delay(600)
             await delay(idLinearValue.value)
+            j += 1
         }
     }
 }
