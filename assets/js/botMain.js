@@ -151,6 +151,7 @@ async function checkMail(emailSplit) {
 async function regUser(bot , usrname) {
     let email
     let commands = [usrname]
+    sendLog(`Logging in ${usrname}`)
     while(true) {
         try {
             email = JSON.parse(await httpsGet('https://www.1secmail.com/api/v1/?action=genRandomMailbox&count=1'))
@@ -188,7 +189,6 @@ async function emailLoginUser(bot, usrname) {
         const list = oldLogins.filter(inner => inner.includes(unm))
         const email = list.toString().split(',')[1]
         const emailSplit = email.split('@')
-        sendLog(email)
         bot.chat(`/login ${email}`)
         const code = (await checkMail(emailSplit))
         bot.chat(`/code ${code}`)
