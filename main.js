@@ -35,3 +35,7 @@ ipcMain.on('config', (event, config) => {
 ipcMain.on('theme', (event, path) => {
     store.set('theme', path)
 });
+
+ipcMain.handle('location', async () => {
+    return app.getPath("userData")
+});

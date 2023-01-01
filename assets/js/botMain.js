@@ -1,4 +1,4 @@
-const { ipcRenderer, shell } = require("electron")
+const { ipcRenderer, shell} = require("electron")
 const https = require('https')
 const { connectBot, delay, salt, addPlayer, rmPlayer, errBot, botApi, sendLog, exeAll, makeParty, addLeader, resetParty, startScript, mineflayer } = require( __dirname + '/assets/js/cf.js')
 const antiafk = require( __dirname +  '/assets/plugins/antiafk')
@@ -95,7 +95,7 @@ window.addEventListener('DOMContentLoaded', () => {
     idBtnAddLeader.addEventListener('click', () => {addLeader(idAddLeader.value)})
     idBtnPartyMake.addEventListener('click', () => {makeParty(idPartySize.value)})
     idBtnPartyReset.addEventListener('click', () => {resetParty()})
-    idBtnC.addEventListener('click', () => {saveData(); saveAccData(accData); window.close()})
+    idBtnC.addEventListener('click', () => {saveData(); saveAccData(accData);})
     idBtnM.addEventListener('click', () => {ipcRenderer.send('minimize')})
 })
 
@@ -389,16 +389,18 @@ function saveData() {
     }))
 }
 let savedAccData = false
-function saveAccData(stringList) {
+async function saveAccData(stringList) {
     if(!savedAccData) {
+        savedAccData = true
+        const dataPath = await ipcRenderer.invoke('location')
         const data = stringList.join('');
-        fs.writeFile('bots_reg.csv', data , { flag: 'a' }, (err) => {
+        fs.writeFile(dataPath + '\\bots_reg.csv', data , { flag: 'a' }, (err) => {
             if (err) {
                 sendLog(error);
                 return;
             }
         });
+        window.close()
     }
-    savedAccData = true
 }
 process.on('uncaughtException', (err) => {sendLog(`<li> <img src="./assets/icons/app/alert-triangle.svg" class="icon-sm" style="filter: brightness(0) saturate(100%) invert(11%) sepia(92%) saturate(6480%) hue-rotate(360deg) brightness(103%) contrast(113%)"> [Internal Error] ${err}</li>`)})
