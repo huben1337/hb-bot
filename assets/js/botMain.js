@@ -100,15 +100,18 @@ window.addEventListener('DOMContentLoaded', () => {
 })
 
 let oldLogins
-fs.readFile('bots_reg.csv', (error, data) => {
-    if (error) {
-      console.log(error);
-      return;
-    }
-    const rows = data.toString().split('\n')
-    oldLogins = rows
-});
-
+readCsv()
+async function readCsv() {
+    const dataPath = await ipcRenderer.invoke('location')
+    fs.readFile(dataPath + '\\bots_reg.csv', (error, data) => {
+        if (error) {
+        console.log(error);
+        return;
+        }
+        const rows = data.toString().split('\n')
+        oldLogins = rows
+    });
+}
 //email setup
 async function httpsGet(url) {
     return new Promise((resolve, reject) => {
