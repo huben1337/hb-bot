@@ -1,4 +1,4 @@
-const { ipcRenderer, shell} = require("electron")
+const { ipcRenderer, shell, clipboard} = require("electron")
 const https = require('https')
 const { connectBot, delay, salt, addPlayer, rmPlayer, errBot, botApi, sendLog, exeAll, makeParty, addLeader, resetParty, startScript, mineflayer } = require( __dirname + '/assets/js/cf.js')
 const antiafk = require( __dirname +  '/assets/plugins/antiafk')
@@ -6,6 +6,10 @@ const fs = require('fs');
 process.NODE_TLS_REJECT_UNAUTHORIZED = "0"
 let currentTime = Date.now()
 let accData = []
+let masterInQue = false
+let masterCommandInQue = false
+let master
+let masterToken
 
 //ids
 let idBotUsername = document.getElementById('botUsename')
@@ -69,6 +73,8 @@ let idBtnPartyReset = document.getElementById('partyReset')
 let idAddLeader = document.getElementById('addLeader')
 let idBtnAddLeader = document.getElementById('btnaddLeader')
 let idLeaderList = document.getElementById('leaderList')
+let idMasterToken = document.getElementById('masterToken')
+let idBtnCpToken = document.getElementById('cpToken')
 
 //button listeners
 window.addEventListener('DOMContentLoaded', () => {
@@ -97,7 +103,10 @@ window.addEventListener('DOMContentLoaded', () => {
     idBtnPartyReset.addEventListener('click', () => {resetParty()})
     idBtnC.addEventListener('click', () => {saveData(); saveAccData(accData);})
     idBtnM.addEventListener('click', () => {ipcRenderer.send('minimize')})
+    idBtnCpToken.addEventListener('click', () => {clipboard.writeText(masterToken)})
 })
+
+genToken()
 
 let oldLogins
 readCsv()
@@ -154,7 +163,7 @@ async function checkMail(emailSplit) {
 async function regUser(bot , usrname) {
     let email
     let commands = [usrname]
-    sendLog(`Registering ${usrname}`)
+    sendLog(`Registering ${usrname}.`)
     while(true) {
         try {
             email = JSON.parse(await httpsGet('https://www.1secmail.com/api/v1/?action=genRandomMailbox&count=1'))
@@ -187,7 +196,7 @@ async function regUser(bot , usrname) {
 
 async function emailLoginUser(bot, usrname) {
     const unm = usrname.replaceAll('.' , '')
-    sendLog(`Logging in ${unm}`)
+    sendLog(`Logging in ${unm} with email.`)
     try {
         const list = oldLogins.filter(inner => inner.includes(unm))
         const email = list.toString().split(',')[1]
@@ -207,7 +216,7 @@ async function emailLoginUser(bot, usrname) {
 
 async function pinLoginUser(bot, usrname) {
     const unm = usrname.replaceAll('.' , '')
-    sendLog(`Logging in ${unm}`)
+    sendLog(`Logging in ${unm} with pin.`)
     try {
         const list = oldLogins.filter(inner => inner.includes(unm))
         const email = list.toString().split(',')[1]
@@ -278,6 +287,7 @@ function newBot(options) {
     bot.once('spawn', ()=> {
         botApi.emit("spawn", bot.username)
         if(idScriptCheck.checked && idScriptPath.value) { startScript(bot.username, idScriptPath.files[0].path)}
+        sendLog(masterToken)
     });
     bot.once('kicked', (reason)=> {
         try {
@@ -309,6 +319,14 @@ function newBot(options) {
     });
     
     bot.on('messagestr', (message) => {
+        let msg = message.replace(/\s+/g, ' ')
+        let i = 0
+        if(message.startsWith('[')) {
+            msg = msg.split(']')[1]
+            i = 2
+        }
+        msg = msg.split(' ')
+        const origin = msg[i]
         if(idBotList.getElementsByTagName("li").length <= 2) {
             sendLog(message)
         }
@@ -320,6 +338,34 @@ function newBot(options) {
         }
         if(message.includes("Login with your email address. Press")) {
             emailLoginUser(bot , usrname)
+        }
+        if(!masterInQue && message.includes(masterToken)) {
+            masterInQue = true
+            sendLog(`The Master is now: ${origin}`)
+            master = origin
+            genToken()
+            masterInQue = false
+        }
+        if(!masterCommandInQue && origin === master) {
+            masterCommandInQue = true
+            if(msg.length < (i+4) && msg.length > (i+2)) {
+                const command = msg[i+1]
+                const a1 = msg[i+2]
+                let a2
+                if(msg.length > (i+3)) {
+                    a2 = msg[i+3]
+                }
+                if(command === 'spam') {
+                    botApi.emit("spam", a1, a2)
+                } else {
+                    exeAll(command, a1, a2)
+                }
+            }
+            timeoutMasterCommands()
+            async function timeoutMasterCommands() {
+                await delay(1000)
+                masterCommandInQue = false
+            }
         }
     });
 
@@ -351,6 +397,12 @@ botApi.on("error", (name, err)=> {
     errBot(name)
     sendLog(`<li> <img src="./assets/icons/app/alert-triangle.svg" class="icon-sm" style="filter: brightness(0) saturate(100%) invert(89%) sepia(82%) saturate(799%) hue-rotate(1deg) brightness(103%) contrast(102%)"> [${name}] ${err}</li>`)
 })
+
+//token for master
+function genToken() {
+    masterToken = salt(20)
+    idMasterToken.innerHTML = masterToken
+}
 
 // uptime counter
 idBtnStart.addEventListener('click', () => {
