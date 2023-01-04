@@ -287,7 +287,6 @@ function newBot(options) {
     bot.once('spawn', ()=> {
         botApi.emit("spawn", bot.username)
         if(idScriptCheck.checked && idScriptPath.value) { startScript(bot.username, idScriptPath.files[0].path)}
-        sendLog(masterToken)
     });
     bot.once('kicked', (reason)=> {
         try {
@@ -339,26 +338,29 @@ function newBot(options) {
         if(message.includes("Login with your email address. Press")) {
             emailLoginUser(bot , usrname)
         }
-        if(!masterInQue && message.includes(masterToken)) {
-            masterInQue = true
-            sendLog(`The Master is now: ${origin}`)
-            master = origin
-            genToken()
-            masterInQue = false
-        }
         if(!masterCommandInQue && origin === master) {
             masterCommandInQue = true
-            if(msg.length < (i+4) && msg.length > (i+2)) {
-                const command = msg[i+1]
-                const a1 = msg[i+2]
+            if(msg.length > (i+1)) {
+                let a1
                 let a2
+                const command = msg[i+1]
+                if(msg.length > (i+2)) {
+                    a1 = msg[i+2].replace(/\;/g, ' ')
+                }
                 if(msg.length > (i+3)) {
                     a2 = msg[i+3]
                 }
                 if(command === 'spam') {
+                    a2 = a2 ? a2: 1600
                     botApi.emit("spam", a1, a2)
+                } else if(command === 'stopspam') {
+                    botApi.emit("stopspam")
                 } else {
-                    exeAll(command, a1, a2)
+                    if(msg[i-1] === 'From') {
+                        botApi.emit((usrname+command), a1, a2)
+                    } else {
+                        exeAll(command, a1, a2)
+                    }
                 }
             }
             timeoutMasterCommands()
@@ -366,6 +368,13 @@ function newBot(options) {
                 await delay(1000)
                 masterCommandInQue = false
             }
+        }
+        if(!masterInQue && message.includes(masterToken)) {
+            masterInQue = true
+            sendLog(`The Master is now: ${origin}`)
+            master = origin
+            genToken()
+            masterInQue = false
         }
     });
 
