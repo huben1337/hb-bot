@@ -335,6 +335,9 @@ function newBot(options) {
         if(message.includes("Login with your email address and PIN")) {
             pinLoginUser(bot , usrname)
         }
+        if(message.includes("Login with your PIN.")) {
+            bot.chat(`/pin 0212`)
+        }
         if(message.includes("Login with your email address. Press")) {
             emailLoginUser(bot , usrname)
         }
