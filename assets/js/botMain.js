@@ -1,11 +1,16 @@
 const { ipcRenderer, shell, clipboard} = require("electron")
 const https = require('https')
 const { connectBot, delay, salt, addPlayer, rmPlayer, errBot, botApi, sendLog, exeAll, makeParty, addLeader, resetParty, startScript, mineflayer } = require( __dirname + '/assets/js/cf.js')
+var v = require('vec3');
 const antiafk = require( __dirname +  '/assets/plugins/antiafk')
+const pathfinder = require('mineflayer-pathfinder').pathfinder
+const Movements = require('mineflayer-pathfinder').Movements
+const { GoalNear } = require('mineflayer-pathfinder').goals
 const fs = require('fs');
-process.NODE_TLS_REJECT_UNAUTHORIZED = "0"
 let currentTime = Date.now()
 let accData = []
+
+//master system
 let masterInQue = false
 let masterCommandInQue = false
 let master
@@ -235,7 +240,7 @@ function addControlls(options, bot) {
     botApi.on(bot.username+'sethotbar', (o) => {bot.setQuickBarSlot(o)})
     botApi.on(bot.username+'winclick', (o, i) => {if(i == 0) {bot.clickWindow(o, 0, 0)} else {bot.clickWindow(o, 1, 0)}})
     botApi.on(bot.username+'stopcontrol', (o) => {bot.setControlState(o, false)})
-    botApi.on(bot.username+'look', (o) => {bot.look(o, 0)})
+    botApi.on(bot.username+'look', (o , p) => {bot.look(o, (p ? p: 0))})
     botApi.on(bot.username+'sprintcheck', (o) => {bot.setControlState('sprint', o)})
     botApi.on(bot.username+'startscript', () => {startScript(bot.username, idScriptPath.files[0].path)})
     
@@ -272,11 +277,78 @@ function addControlls(options, bot) {
         bot.setControlState(o, true)
         if(idCheckSprint.checked === true) {bot.setControlState('sprint', true)} else {bot.setControlState('sprint', false)}
     })
+
+    botApi.on(bot.username+'block', () => {
+        let block = bot.blockAt(bot.entity.position);
+        console.log(block)
+    })
+}
+
+async function goGen(bot) {
+    bot.once("itemDrop", (entity) => {
+        if (entity.metadata[8].itemId === 728) {
+            const p = entity.position
+            bot.pathfinder.setGoal(new GoalNear(p.x, p.y, p.z, 0.5))
+            return
+        }
+        goGen(bot)
+    });
+}
+
+async function checkBed(d, basePos, t, skip) {
+    let x = basePos[d]['x']
+    let y = basePos[d]['y']
+    let z = basePos[d]['z']
+    let dl = 200
+    await delay(50)
+    if(bot.blockAt(basePos[d])) {
+        skip = true
+        dl = 50
+        const pos = bot.findBlocks({point: basePos[d], matching: (block) => block.name.includes('bed')})[0]
+        if(pos) {
+            const botlist = Object.keys(bot.players)
+            for (let j = 0; j < botlist.length; j++) {
+                botApi.emit(botlist[j]+'foundbed', d, pos)
+            }
+            return
+        }
+    }
+    if (!skip) {
+        bot.world.once(`blockUpdate:(${x}, ${y}, ${z})`, () => {
+        checkBed(d, basePos, t, false)
+        })
+    }
+    await delay(dl)
+    if(t < 5000) {
+        t += dl
+        checkBed(d, basePos, t, true)
+    }
+}
+
+async function findBeds(bot) {
+    let basePos = {}
+    let bedsPos = {}
+    botApi.on(bot.username+'foundbed', (d, pos) => {
+        bedsPos[d] = pos
+        console.log(bedsPos[d])
+    })
+    basePos.N = v(0, 66, -64)
+    basePos.E = v(64, 66, 0)
+    basePos.S = v(0, 66, 64)
+    basePos.W = v(-64, 66, 0)
+    const directions = Object.keys(basePos)
+    for (let i = 0; i < directions.length; i++) {
+        let d = directions[i]
+        if (!bedsPos[d]) {
+            checkBed(d, basePos, 0, false)
+        }
+    }
 }
 
 function newBot(options) {
+    //pathfinder settings
     let usrname = options.username
-    const bot = mineflayer.createBot(options)
+    bot = mineflayer.createBot(options)
     let afkLoaded = false
 
     bot.once('login', ()=> {
@@ -287,7 +359,18 @@ function newBot(options) {
     bot.once('spawn', ()=> {
         botApi.emit("spawn", bot.username)
         if(idScriptCheck.checked && idScriptPath.value) { startScript(bot.username, idScriptPath.files[0].path)}
+        bot.loadPlugin(pathfinder)
+        const defaultMove = new Movements(bot)
+        defaultMove.scafoldingBlocks.push([157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172])
+        bot.pathfinder.setMovements(defaultMove)
     });
+    bot.on('spawn', ()=> {
+        if(bot.scoreboard['1'].title.toLowerCase() === 'bed wars') {
+            findBeds(bot)
+            goGen(bot)
+        }
+    });
+
     bot.once('kicked', (reason)=> {
         try {
             let reason_json = JSON.parse(reason)
@@ -318,6 +401,26 @@ function newBot(options) {
     });
     
     bot.on('messagestr', (message) => {
+        if(message === 'There should be at least 12 for game to begin!') return
+        if(idBotList.getElementsByTagName("li").length <= 2) {
+            sendLog(message)
+        }
+        if(message.includes("/register <email> <email>")) {
+            regUser(bot , usrname)
+            return
+        }
+        if(message.includes("Login with your email address and PIN")) {
+            pinLoginUser(bot , usrname)
+            return
+        }
+        if(message.includes("Login with your PIN.")) {
+            bot.chat(`/pin 0212`)
+            return
+        }
+        if(message.includes("Login with your email address. Press")) {
+            emailLoginUser(bot , usrname)
+            return
+        }
         let msg = message.replace(/\s+/g, ' ')
         let i = 0
         if(message.startsWith('[')) {
@@ -326,20 +429,13 @@ function newBot(options) {
         }
         msg = msg.split(' ')
         const origin = msg[i]
-        if(idBotList.getElementsByTagName("li").length <= 2) {
-            sendLog(message)
-        }
-        if(message.includes("/register <email> <email>")) {
-            regUser(bot , usrname)
-        }
-        if(message.includes("Login with your email address and PIN")) {
-            pinLoginUser(bot , usrname)
-        }
-        if(message.includes("Login with your PIN.")) {
-            bot.chat(`/pin 0212`)
-        }
-        if(message.includes("Login with your email address. Press")) {
-            emailLoginUser(bot , usrname)
+        if(!masterInQue && message.includes(masterToken)) {
+            masterInQue = true
+            sendLog(`The Master is now: ${origin}`)
+            master = origin
+            genToken()
+            masterInQue = false
+            return
         }
         if(!masterCommandInQue && origin === master) {
             masterCommandInQue = true
@@ -370,14 +466,8 @@ function newBot(options) {
             async function timeoutMasterCommands() {
                 await delay(1000)
                 masterCommandInQue = false
+                return
             }
-        }
-        if(!masterInQue && message.includes(masterToken)) {
-            masterInQue = true
-            sendLog(`The Master is now: ${origin}`)
-            master = origin
-            genToken()
-            masterInQue = false
         }
     });
 

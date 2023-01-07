@@ -310,14 +310,7 @@ function  newUsername() {
     min = Math.ceil(5)
     max = Math.floor(16)
     var length = Math.floor(Math.random() * (max - min + 1)) + min
-    const characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_'
-    let name = ''
-    const charactersLength = characters.length
-    for ( let i = 0; i < length; i++ ) {
-        name += characters.charAt(Math.floor(Math.random() * charactersLength))
-    }
-    console.log(name)
-    return name
+    return salt(length)
 }
 
 module.exports = { getBotInfo, connectBot, salt, delay, addPlayer, rmPlayer, errBot, sendLog, exeAll, makeParty, addLeader, resetParty, startScript, genName, mineflayer, botApi }

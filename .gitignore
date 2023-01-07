@@ -3,3 +3,4 @@ release-builds
 dist
 package-lock.json
 bots_reg.csv
+test.js
