@@ -7,6 +7,7 @@ const pathfinder = require('mineflayer-pathfinder').pathfinder
 const Movements = require('mineflayer-pathfinder').Movements
 const { GoalNear } = require('mineflayer-pathfinder').goals
 const fs = require('fs');
+const { count } = require("console");
 let currentTime = Date.now()
 let accData = []
 
@@ -15,6 +16,12 @@ let masterInQue = false
 let masterCommandInQue = false
 let master
 let masterToken
+
+let players = []
+function addPlayers(newArray) {
+    players = [...new Set([...players, ...newArray])];
+    console.log("added players")
+}
 
 //ids
 let idBotUsername = document.getElementById('botUsename')
@@ -244,6 +251,7 @@ function addControlls(options, bot) {
     botApi.on(bot.username+'sprintcheck', (o) => {bot.setControlState('sprint', o)})
     botApi.on(bot.username+'startscript', () => {startScript(bot.username, idScriptPath.files[0].path)})
     
+    let afkLoaded = false
     botApi.on(bot.username+'afkon', () => {
         if(!afkLoaded) {
             afkLoaded = true
@@ -284,25 +292,84 @@ function addControlls(options, bot) {
     })
 }
 
-async function goGen(bot) {
+async function collectRec(bot) {
     bot.once("itemDrop", (entity) => {
-        if (entity.metadata[8].itemId === 728) {
+        const id = entity.metadata[8].itemId
+        if(id === 728 || id === 732) {
             const p = entity.position
-            bot.pathfinder.setGoal(new GoalNear(p.x, p.y, p.z, 0.5))
+            bot.pathfinder.setGoal(new GoalNear(p.x, (p.y + 0.5), p.z, 0.5))
+            checkRecCollecting()
+            async function checkRecCollecting() {
+                let done = false
+                botApi.once('stopRecCollection', () => {
+                    done = true
+                })
+                let count1 = bot.inventory.items().filter(item => (item.name === "iron_ingot" && item.count < 64))
+                while (!done) {
+                    await delay(2000)
+                    if(done) return
+                    const count2 = bot.inventory.items().filter(item => (item.name === "iron_ingot" && item.count < 64))
+                    if(count1 >= count2) {
+                        if(done) return
+                        collectRec(bot)
+                        break
+                    }
+                    count1 = count2
+                }
+            }
             return
         }
-        goGen(bot)
+        collectRec(bot)
     });
 }
 
-async function checkBed(d, basePos, t, skip) {
+async function checkBed(bot, d, basePos, t, listenBlockUpdate, setupBedListener) {
+    let done = false
+    if (setupBedListener) {
+        botApi.on(bot.username+'foundbed', (direction, pos) => {
+            if(d === direction) done = true
+        })
+    }
     let x = basePos[d]['x']
     let y = basePos[d]['y']
     let z = basePos[d]['z']
-    let dl = 200
+    while (t < 5000 && !done) {
+        let dl = 200
+        await delay(50)
+        if(done) return
+        if(bot.blockAt(basePos[d])) {
+            listenBlockUpdate = false
+            dl = 50
+            const pos = bot.findBlocks({point: basePos[d], matching: (block) => block.name.includes('bed')})[0]
+            if(pos && !done) {
+                const botlist = Object.keys(bot.players)
+                for (let j = 0; j < botlist.length; j++) {
+                    if(done) return
+                    botApi.emit(botlist[j]+'foundbed', d, pos)
+                }
+                return
+            }
+        }
+        if (listenBlockUpdate && !done) {
+            bot.world.once(`blockUpdate:(${x}, ${y}, ${z})`, () => {
+                if(done) return
+                listenBlockUpdate = true
+                checkBed(bot, d, basePos, t, true, false)
+            })
+        }
+        if(done) return
+        await delay(dl)
+        t += dl
+    }
+    /*
+    if (setupBedListener) {
+        botApi.on(bot.username+'foundbed', (direction, pos) => {
+            if(d = direction) return
+        })
+    }
     await delay(50)
     if(bot.blockAt(basePos[d])) {
-        skip = true
+        listenBlockUpdate = false
         dl = 50
         const pos = bot.findBlocks({point: basePos[d], matching: (block) => block.name.includes('bed')})[0]
         if(pos) {
@@ -313,16 +380,17 @@ async function checkBed(d, basePos, t, skip) {
             return
         }
     }
-    if (!skip) {
+    if (listenBlockUpdate) {
         bot.world.once(`blockUpdate:(${x}, ${y}, ${z})`, () => {
-        checkBed(d, basePos, t, false)
+        checkBed(d, basePos, t, true, false)
         })
     }
     await delay(dl)
     if(t < 5000) {
         t += dl
-        checkBed(d, basePos, t, true)
+        checkBed(d, basePos, t, false, false)
     }
+    */
 }
 
 async function findBeds(bot) {
@@ -340,17 +408,24 @@ async function findBeds(bot) {
     for (let i = 0; i < directions.length; i++) {
         let d = directions[i]
         if (!bedsPos[d]) {
-            checkBed(d, basePos, 0, false)
+            checkBed(bot, d, basePos, 0, true, true)
         }
     }
 }
 
+async function playBedWars(bot) {
+    botApi.once('mapNamed', (mn) => {
+        mapname = mn
+    })
+
+}
+
+let bot
 function newBot(options) {
     //pathfinder settings
     let usrname = options.username
+    let updatedMapName = false
     bot = mineflayer.createBot(options)
-    let afkLoaded = false
-
     bot.once('login', ()=> {
         botApi.emit("login", bot.username)
         addControlls(options, bot)
@@ -365,12 +440,30 @@ function newBot(options) {
         bot.pathfinder.setMovements(defaultMove)
     });
     bot.on('spawn', ()=> {
+        sendLog("spawned")
         if(bot.scoreboard['1'].title.toLowerCase() === 'bed wars') {
-            findBeds(bot)
-            goGen(bot)
+        sendLog(`<strong>${usrname} joined Bedwars</strong>`)
+            //findBeds(bot)
+            collectRec(bot)
+            updatedMapName = false
         }
     });
-
+    bot.on("teamUpdated", (team)=> {
+        /*addPlayers(Object.keys(team['membersMap']))*/
+        if (encodeURIComponent(team['team']) === '%C2%A76%C2%A7r') {
+            const teamExtraPre = team['prefix']['json']['extra']
+            if (teamExtraPre['0']['text'].toLowerCase().includes('map')) {
+                if (updatedMapName) {
+                    let mapname = teamExtraPre['1']['text']
+                    mapname += team['suffix']['json']['text']
+                    botApi.emit('mapNamed', mapname)
+                    updatedMapName = false
+                } else {
+                    updatedMapName = true
+                }
+            }
+        }
+    });
     bot.once('kicked', (reason)=> {
         try {
             let reason_json = JSON.parse(reason)
@@ -418,6 +511,10 @@ function newBot(options) {
             return
         }
         if(message.includes("Login with your email address. Press")) {
+            emailLoginUser(bot , usrname)
+            return
+        }
+        if(message.includes()) {
             emailLoginUser(bot , usrname)
             return
         }
@@ -553,10 +650,19 @@ async function saveAccData(stringList) {
         const data = stringList.join('');
         fs.writeFile(dataPath + '\\bots_reg.csv', data , { flag: 'a' }, (err) => {
             if (err) {
-                sendLog(error);
+                sendLog(err);
                 return;
             }
         });
+        /*
+                const data2 = players.join('\n');
+        fs.writeFile('players.txt', data2 , { flag: 'a' }, (err) => {
+            if (err) {
+                sendLog(err);
+                return;
+            }
+        });
+        */
         window.close()
     }
 }
