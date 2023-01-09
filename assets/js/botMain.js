@@ -8,6 +8,7 @@ const Movements = require('mineflayer-pathfinder').Movements
 const { GoalNear } = require('mineflayer-pathfinder').goals
 const fs = require('fs');
 const { count } = require("console");
+const { on } = require("events");
 let currentTime = Date.now()
 let accData = []
 
@@ -87,6 +88,9 @@ let idBtnAddLeader = document.getElementById('btnaddLeader')
 let idLeaderList = document.getElementById('leaderList')
 let idMasterToken = document.getElementById('masterToken')
 let idBtnCpToken = document.getElementById('cpToken')
+let idBtnJoinBW = document.getElementById('joinBW')
+let idBtnCancelBW = document.getElementById('cancelBW')
+let idModeBW = document.getElementById('modeBW')
 
 //button listeners
 window.addEventListener('DOMContentLoaded', () => {
@@ -116,6 +120,8 @@ window.addEventListener('DOMContentLoaded', () => {
     idBtnC.addEventListener('click', () => {saveData(); saveAccData(accData);})
     idBtnM.addEventListener('click', () => {ipcRenderer.send('minimize')})
     idBtnCpToken.addEventListener('click', () => {clipboard.writeText(masterToken)})
+    idBtnJoinBW.addEventListener('click', () => {exeAll('joinBW', idModeBW.value)})
+    idBtnCancelBW.addEventListener('click', () => {exeAll('cancelBW')})
 })
 
 genToken()
@@ -286,36 +292,95 @@ function addControlls(options, bot) {
         if(idCheckSprint.checked === true) {bot.setControlState('sprint', true)} else {bot.setControlState('sprint', false)}
     })
 
-    botApi.on(bot.username+'block', () => {
-        let block = bot.blockAt(bot.entity.position);
-        console.log(block)
+    let dontJoinBW = false
+    let cancelBW = false
+
+    botApi.on(bot.username+'cancelBW', () => {
+        cancelBW = true
+    })
+
+    botApi.on(bot.username+'joinBW', (mode) => {
+        cancelBW = false
+        if(dontJoinBW) return
+        console.log("adawdawd")
+
+        let cond1
+        try {
+            cond1 = (bot.scoreboard['1'].title.toLowerCase() === 'bed wars')
+        } catch (error) {
+            cond1 = false
+        }
+        if(cond1) {
+            console.log(bot.username, "already in Bedwars")
+            return
+        }
+
+        let cond2
+        try {
+            cond2 = (bot.scoreboard['1']).name.includes('fb-')
+        } catch (error) {
+            cond2 = false
+        }        
+        console.log(cond2)     
+        if (cond2) {
+            console.log("already in lobby")
+            bot.once("windowOpen", (window) => {
+                if(cancelBW) return
+                console.log(window)
+                if (window.title === '{"text":"BedWars"}') {
+                    console.log("Bedwars selct")
+                    bot.clickWindow(mode, 0, 0)
+                    return
+                }
+                if(window.title === '{"text":"Games"}') {
+                    console.log("Game selct")
+                    botApi.emit(bot.username+'joinBW', mode)
+                    bot.clickWindow(19, 0, 0)
+                    return
+                }
+                console.log("go back")
+                botApi.emit(bot.username+'joinBW', mode)
+                bot.clickWindow(16, 0, 0)
+            })
+            bot.setQuickBarSlot(0)
+            bot.activateItem()
+            return
+        }
+        console.log("i ran")
+        bot.once('spawn', () => {
+            dontJoinBW = false
+            if(cancelBW) return
+            botApi.emit(bot.username+'joinBW', mode)
+        });
+        console.log("dontjoinBW = true")
+        dontJoinBW = true
+        bot.chat("/hub")
     })
 }
 
+
 async function collectRec(bot) {
-    bot.once("itemDrop", (entity) => {
+    let done = false
+    botApi.once('stopRecCollection', () => {
+        done = true
+    })
+    bot.once("itemDrop", async (entity) => {
+        if(done) return
         const id = entity.metadata[8].itemId
         if(id === 728 || id === 732) {
             const p = entity.position
             bot.pathfinder.setGoal(new GoalNear(p.x, (p.y + 0.5), p.z, 0.5))
-            checkRecCollecting()
-            async function checkRecCollecting() {
-                let done = false
-                botApi.once('stopRecCollection', () => {
-                    done = true
-                })
-                let count1 = bot.inventory.items().filter(item => (item.name === "iron_ingot" && item.count < 64))
-                while (!done) {
-                    await delay(2000)
+            let count1 = bot.inventory.items().filter(item => (item.name === "iron_ingot" && item.count < 64))
+            while (!done) {
+                await delay(5000)
+                if(done) return
+                const count2 = bot.inventory.items().filter(item => (item.name === "iron_ingot" && item.count < 64))
+                if(count1 >= count2) {
                     if(done) return
-                    const count2 = bot.inventory.items().filter(item => (item.name === "iron_ingot" && item.count < 64))
-                    if(count1 >= count2) {
-                        if(done) return
-                        collectRec(bot)
-                        break
-                    }
-                    count1 = count2
+                    collectRec(bot)
+                    break
                 }
+                count1 = count2
             }
             return
         }
@@ -420,12 +485,12 @@ async function playBedWars(bot) {
 
 }
 
-let bot
 function newBot(options) {
+    let joinBW = false
     //pathfinder settings
     let usrname = options.username
     let updatedMapName = false
-    bot = mineflayer.createBot(options)
+    const bot = mineflayer.createBot(options)
     bot.once('login', ()=> {
         botApi.emit("login", bot.username)
         addControlls(options, bot)
@@ -441,6 +506,7 @@ function newBot(options) {
     });
     bot.on('spawn', ()=> {
         sendLog("spawned")
+        console.log(bot.scoreboard)
         if(bot.scoreboard['1'].title.toLowerCase() === 'bed wars') {
         sendLog(`<strong>${usrname} joined Bedwars</strong>`)
             //findBeds(bot)
@@ -478,15 +544,12 @@ function newBot(options) {
             botApi.emit("kicked", bot.username, reason)
         } 
     });
-    bot.once('end', (reason)=> {
+    bot.once('end', async (reason)=> {
         botApi.emit("end", usrname, reason)
         if(idCheckAutoRc.checked === true) {
-            recon()
-            async function recon() {
-                await delay(idReconDelay.value ? idReconDelay.value : 1000)
-                rmPlayer(usrname)
-                newBot(options)
-            }
+            await delay(idReconDelay.value ? idReconDelay.value : 1000)
+            rmPlayer(usrname)
+            newBot(options)
         }
     });
     bot.once('error', (err)=> {

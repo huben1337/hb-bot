@@ -83,6 +83,7 @@
                      <button class="button funcBtnLink" onclick="openFuncs(event,'drop')">Drop</button>
                      <button class="button funcBtnLink" onclick="openFuncs(event,'antiafk')">Anti-AFK</button>
                      <button class="button funcBtnLink" onclick="openFuncs(event,'partition')">Split in Partys</button>
+                     <button class="button funcBtnLink" onclick="openFuncs(event,'bedwars')">Join Bedwars</button>
                   </ul>
                </div>
                <div class="bottingContentArea pl-4">
@@ -253,6 +254,21 @@
                            <button id="partyReset" class="button" style="padding: 5px 15px;">Reset</button>
                         </div>
                         <ul id="leaderList" class="flex-colum" style="width: 198px; height:70px;"></ul>
+                     </div>
+                  </div>
+                  <div id="bedwars" class="functsBtn" style="display:none">
+                     <div class="input-group center-elements flex-colum">
+                        <span class="label">
+                        <label class="label-text">Game Mode</label>
+                        </span>
+                        <select id="modeBW" class="select">
+                           <option value="13">Quads</option>
+                           <option value="19">Doubles</option>
+                        </select>
+                        <div class="flex center-elements mu-4">
+                           <button id="joinBW" class="button">Join</button>
+                           <button id="cancelBW" class="button">Cancel</button>
+                        </div>
                      </div>
                   </div>
                </div>
