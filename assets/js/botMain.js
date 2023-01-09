@@ -297,6 +297,7 @@ function addControlls(options, bot) {
 
     botApi.on(bot.username+'cancelBW', () => {
         cancelBW = true
+        dontJoinBW = false
     })
 
     botApi.on(bot.username+'joinBW', (mode) => {
@@ -317,7 +318,8 @@ function addControlls(options, bot) {
 
         let cond2
         try {
-            cond2 = (bot.scoreboard['1']).name.includes('fb-')
+            console.log(bot.scoreboard['1'].name)
+            cond2 = bot.scoreboard['1'].name.includes('fb-')
         } catch (error) {
             cond2 = false
         }        
@@ -506,7 +508,6 @@ function newBot(options) {
     });
     bot.on('spawn', ()=> {
         sendLog("spawned")
-        console.log(bot.scoreboard)
         if(bot.scoreboard['1'].title.toLowerCase() === 'bed wars') {
         sendLog(`<strong>${usrname} joined Bedwars</strong>`)
             //findBeds(bot)
