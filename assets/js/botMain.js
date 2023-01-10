@@ -291,79 +291,72 @@ function addControlls(options, bot) {
         bot.setControlState(o, true)
         if(idCheckSprint.checked === true) {bot.setControlState('sprint', true)} else {bot.setControlState('sprint', false)}
     })
-
+    // join bedwars api and functions setup
     let dontJoinBW = false
-    let cancelBW = false
-
     botApi.on(bot.username+'cancelBW', () => {
-        cancelBW = true
         dontJoinBW = false
     })
-
+    const actions = [19, mode]
+    const titles = ['{"text":"Games"}', '{"text":"BedWars"}']
+    const backActions = 16
     botApi.on(bot.username+'joinBW', (mode) => {
-        cancelBW = false
         if(dontJoinBW) return
-        console.log("adawdawd")
-
-        let cond1
-        try {
-            cond1 = (bot.scoreboard['1'].title.toLowerCase() === 'bed wars')
-        } catch (error) {
-            cond1 = false
+        if (bot.scoreboard['1']) {
+            if(bot.scoreboard['1'].title.toLowerCase() === 'bed wars') {
+                console.log(bot.username, "is already in Bedwars")
+                return
+            }
+            if (bot.scoreboard['1'].name.includes('fb-')) {
+                console.log(bot.username, "is already in Lobby")
+                navigateWindow(bot, actions, titles, backActions)
+                bot.setQuickBarSlot(0)
+                bot.activateItem()
+                return
+            }
         }
-        if(cond1) {
-            console.log(bot.username, "already in Bedwars")
-            return
-        }
-
-        let cond2
-        try {
-            console.log(bot.scoreboard['1'].name)
-            cond2 = bot.scoreboard['1'].name.includes('fb-')
-        } catch (error) {
-            cond2 = false
-        }        
-        console.log(cond2)     
-        if (cond2) {
-            console.log("already in lobby")
-            bot.once("windowOpen", (window) => {
-                if(cancelBW) return
-                console.log(window)
-                if (window.title === '{"text":"BedWars"}') {
-                    console.log("Bedwars selct")
-                    bot.clickWindow(mode, 0, 0)
-                    return
-                }
-                if(window.title === '{"text":"Games"}') {
-                    console.log("Game selct")
-                    botApi.emit(bot.username+'joinBW', mode)
-                    bot.clickWindow(19, 0, 0)
-                    return
-                }
-                console.log("go back")
-                botApi.emit(bot.username+'joinBW', mode)
-                bot.clickWindow(16, 0, 0)
-            })
-            bot.setQuickBarSlot(0)
-            bot.activateItem()
-            return
-        }
-        console.log("i ran")
+        console.log(bot.username, "going to Lobby")
         bot.once('spawn', () => {
             dontJoinBW = false
             if(cancelBW) return
             botApi.emit(bot.username+'joinBW', mode)
-        });
-        console.log("dontjoinBW = true")
+        })
         dontJoinBW = true
-        bot.chat("/hub")
+        bot.chat("/lobby 1")
+    })
+
+    botApi.on(bot.username+'startRecCollection', () => {
+        collectRec(bot)
     })
 }
 
+function navigateWindow(bot, actions, titles, backActions) {
+    let cancelBW = false
+    botApi.once(bot.username+'cancelBW', () => {
+        cancelBW = true
+    })
+    bot.once("windowOpen", (window) => {
+        for (let i = 0; i < actions.length; i++) {
+            if(cancelBW) return
+            if (window.title === titles[i]) {
+                console.log(bot.username, "opened", titles[i])
+                if(i !== (actions.length - 1)) {
+                    navigateWindow(bot, actions, titles, backActions)
+                }
+                bot.clickWindow(actions[i], 0, 0)
+                return
+            }        
+        }
+        if(cancelBW) return
+        console.log(bot.username, "navigating back in window")
+        navigateWindow(bot, actions, titles, backActions)
+        bot.clickWindow(backActions, 0, 0)
+    })
+    return
+}
 
 async function collectRec(bot) {
     let done = false
-    botApi.once('stopRecCollection', () => {
+    botApi.once(bot.username+'stopRecCollection', () => {
         done = true
     })
     bot.once("itemDrop", async (entity) => {
@@ -372,22 +365,23 @@ async function collectRec(bot) {
         if(id === 728 || id === 732) {
             const p = entity.position
             bot.pathfinder.setGoal(new GoalNear(p.x, (p.y + 0.5), p.z, 0.5))
-            let count1 = bot.inventory.items().filter(item => (item.name === "iron_ingot" && item.count < 64))
+            await delay(2000)
+            let oldCount = 0
             while (!done) {
-                await delay(5000)
+                await delay(4000)
                 if(done) return
-                const count2 = bot.inventory.items().filter(item => (item.name === "iron_ingot" && item.count < 64))
-                if(count1 >= count2) {
-                    if(done) return
-                    collectRec(bot)
-                    break
-                }
-                count1 = count2
+                console.log("check if  in gen")
+                const ironItems = bot.inventory.items().filter(item => (item.name === "iron_ingot" && item.count < 64))
+                if (ironItems.length === 0) break
+                const newCount = ironItems['0'].count
+                if(oldCount >= newCount) break
+                oldCount = newCount
             }
-            return
         }
+        if(done) return
         collectRec(bot)
-    });
+    })
+    return
 }
 
 async function checkBed(bot, d, basePos, t, listenBlockUpdate, setupBedListener) {
