@@ -84,6 +84,7 @@
                      <button class="button funcBtnLink" onclick="openFuncs(event,'antiafk')">Anti-AFK</button>
                      <button class="button funcBtnLink" onclick="openFuncs(event,'partition')">Split in Partys</button>
                      <button class="button funcBtnLink" onclick="openFuncs(event,'bedwars')">Join Bedwars</button>
+                     <button class="button funcBtnLink" onclick="openFuncs(event,'recCollection')">Collect Resources</button>
                   </ul>
                </div>
                <div class="bottingContentArea pl-4">
@@ -268,6 +269,18 @@
                         <div class="flex center-elements mu-4">
                            <button id="joinBW" class="button">Join</button>
                            <button id="cancelBW" class="button">Cancel</button>
+                        </div>
+                     </div>
+                  </div>
+                  <div id="recCollection" class="functsBtn" style="display:none">
+                     <div class="input-group center-elements flex-colum">
+                        <span class="label">
+                        <label class="label-text">Collect Resources</label>
+                        </span>
+                        <input id="recCount" class="input" type="number" placeholder="Resource Count (empty means infinite)">
+                        <div class="flex center-elements mu-4">
+                           <button id="startRecCollection" class="button">Start</button>
+                           <button id="stopRecCollection" class="button">Stop</button>
                         </div>
                      </div>
                   </div>

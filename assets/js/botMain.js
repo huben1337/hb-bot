@@ -91,6 +91,9 @@ let idBtnCpToken = document.getElementById('cpToken')
 let idBtnJoinBW = document.getElementById('joinBW')
 let idBtnCancelBW = document.getElementById('cancelBW')
 let idModeBW = document.getElementById('modeBW')
+let idBtnStartRecCollection = document.getElementById('startRecCollection')
+let idBtnStopRecCollection = document.getElementById('stopRecCollection')
+let idRecCount = document.getElementById('recCount')
 
 //button listeners
 window.addEventListener('DOMContentLoaded', () => {
@@ -122,6 +125,8 @@ window.addEventListener('DOMContentLoaded', () => {
     idBtnCpToken.addEventListener('click', () => {clipboard.writeText(masterToken)})
     idBtnJoinBW.addEventListener('click', () => {exeAll('joinBW', idModeBW.value)})
     idBtnCancelBW.addEventListener('click', () => {exeAll('cancelBW')})
+    idBtnStartRecCollection.addEventListener('click', () => {exeAll('startRecCollection', idRecCount.value)})
+    idBtnStopRecCollection.addEventListener('click', () => {exeAll('stopRecCollection')})
 })
 
 genToken()
@@ -246,7 +251,7 @@ async function pinLoginUser(bot, usrname) {
 
 function addControlls(options, bot) {
     botApi.once(bot.username+'disconnect', () => {bot.quit()})
-    botApi.once(bot.username+'reconnect', () => {bot.quit(); const r = async () => {await delay(500); newBot(options)}; r()})
+    botApi.once(bot.username+'reconnect', () => {bot.quit(); const r = async () => {await delay(idJoinDelay.value ? idJoinDelay.value : 1000); newBot(options)}; if(idCheckAutoRc.checked !== true) r()})
     botApi.on(bot.username+'chat', (o) => { if(idCheckAntiSpam.checked) { bot.chat(o.replaceAll("(SALT)", salt(4))+" "+salt(antiSpamLength.value ? antiSpamLength.value : 5)) } else { bot.chat(o.replaceAll("(SALT)", salt(4))) } })
     botApi.on(bot.username+'useheld', () => {bot.activateItem()})
     botApi.on(bot.username+'closewindow', () => {bot.closeWindow(window)})
@@ -293,20 +298,27 @@ function addControlls(options, bot) {
     })
     // join bedwars api and functions setup
     let dontJoinBW = false
-    botApi.on(bot.username+'cancelBW', () => {
+    let cancelBW = false
+    botApi.on(bot.username+'resetJoinBW', () => {
         dontJoinBW = false
     })
-    const actions = [19, mode]
-    const titles = ['{"text":"Games"}', '{"text":"BedWars"}']
-    const backActions = 16
-    botApi.on(bot.username+'joinBW', (mode) => {
-        if(dontJoinBW) return
+    botApi.on(bot.username+'cancelBW', () => {
+        cancelBW = true
+        dontJoinBW = false
+    })
+    
+    botApi.on(bot.username+'joinBW', (mode, bypass) => {
+        if(dontJoinBW && !bypass) return
+        dontJoinBW = true
+        const actions = [19, mode]
+        const titles = ['{"text":"Games"}', '{"text":"BedWars"}']
+        const backActions = 16
         if (bot.scoreboard['1']) {
-            if(bot.scoreboard['1'].title.toLowerCase() === 'bed wars') {
+            if(bot.scoreboard['1'].title.toLowerCase().includes('bed wars')) {
                 console.log(bot.username, "is already in Bedwars")
                 return
             }
-            if (bot.scoreboard['1'].name.includes('fb-')) {
+            if (bot.scoreboard['1'].title.toLowerCase().includes('herobrine')) { //1.18.2: (bot.scoreboard['1'].name.includes('fb-'))
                 console.log(bot.username, "is already in Lobby")
                 navigateWindow(bot, actions, titles, backActions)
                 bot.setQuickBarSlot(0)
@@ -318,14 +330,17 @@ function addControlls(options, bot) {
         bot.once('spawn', () => {
             dontJoinBW = false
             if(cancelBW) return
-            botApi.emit(bot.username+'joinBW', mode)
+            botApi.emit(bot.username+'joinBW', mode, true)
         })
-        dontJoinBW = true
         bot.chat("/lobby 1")
     })
 
     botApi.on(bot.username+'startRecCollection', () => {
         collectRec(bot)
+    })
+
+    botApi.on('mid', () => {
+        bot.pathfinder.goto(new GoalNear(0, (66 + 0.5), 0, 0.5))
     })
 }
 
@@ -354,7 +369,7 @@ function navigateWindow(bot, actions, titles, backActions) {
     return
 }
 
-async function collectRec(bot) {
+async function collectRec(bot, count) {
     let done = false
     botApi.once(bot.username+'stopRecCollection', () => {
         done = true
@@ -374,6 +389,9 @@ async function collectRec(bot) {
                 const ironItems = bot.inventory.items().filter(item => (item.name === "iron_ingot" && item.count < 64))
                 if (ironItems.length === 0) break
                 const newCount = ironItems['0'].count
+                if (count && newCount >= count) {
+                    botApi.emit(bot.username+'stopRecCollection')
+                }
                 if(oldCount >= newCount) break
                 oldCount = newCount
             }
@@ -384,29 +402,27 @@ async function collectRec(bot) {
     return
 }
 
-async function checkBed(bot, d, basePos, t, listenBlockUpdate, setupBedListener) {
+async function checkBed(bot, direction, basePos, t, listenBlockUpdate) {
     let done = false
-    if (setupBedListener) {
-        botApi.on(bot.username+'foundbed', (direction, pos) => {
-            if(d === direction) done = true
-        })
-    }
-    let x = basePos[d]['x']
-    let y = basePos[d]['y']
-    let z = basePos[d]['z']
+    botApi.once(bot.username+'foundbed'+direction, () => {
+        done = true
+    })
+    let x = basePos[direction]['x']
+    let y = basePos[direction]['y']
+    let z = basePos[direction]['z']
     while (t < 5000 && !done) {
         let dl = 200
         await delay(50)
         if(done) return
-        if(bot.blockAt(basePos[d])) {
+        if(bot.blockAt(basePos[direction])) {
             listenBlockUpdate = false
             dl = 50
-            const pos = bot.findBlocks({point: basePos[d], matching: (block) => block.name.includes('bed')})[0]
+            const pos = bot.findBlocks({point: basePos[direction], matching: (block) => block.name.includes('bed')})[0]
             if(pos && !done) {
-                const botlist = Object.keys(bot.players)
-                for (let j = 0; j < botlist.length; j++) {
+                const playerList = Object.keys(bot.players)
+                for (let i = 0; i < playerList.length; i++) {
                     if(done) return
-                    botApi.emit(botlist[j]+'foundbed', d, pos)
+                    botApi.emit(playerList[i]+'foundbed'+direction, pos)
                 }
                 return
             }
@@ -415,62 +431,31 @@ async function checkBed(bot, d, basePos, t, listenBlockUpdate, setupBedListener)
             bot.world.once(`blockUpdate:(${x}, ${y}, ${z})`, () => {
                 if(done) return
                 listenBlockUpdate = true
-                checkBed(bot, d, basePos, t, true, false)
+                checkBed(bot, direction, basePos, t, true)
             })
         }
         if(done) return
         await delay(dl)
         t += dl
     }
-    /*
-    if (setupBedListener) {
-        botApi.on(bot.username+'foundbed', (direction, pos) => {
-            if(d = direction) return
-        })
-    }
-    await delay(50)
-    if(bot.blockAt(basePos[d])) {
-        listenBlockUpdate = false
-        dl = 50
-        const pos = bot.findBlocks({point: basePos[d], matching: (block) => block.name.includes('bed')})[0]
-        if(pos) {
-            const botlist = Object.keys(bot.players)
-            for (let j = 0; j < botlist.length; j++) {
-                botApi.emit(botlist[j]+'foundbed', d, pos)
-            }
-            return
-        }
-    }
-    if (listenBlockUpdate) {
-        bot.world.once(`blockUpdate:(${x}, ${y}, ${z})`, () => {
-        checkBed(d, basePos, t, true, false)
-        })
-    }
-    await delay(dl)
-    if(t < 5000) {
-        t += dl
-        checkBed(d, basePos, t, false, false)
-    }
-    */
 }
 
 async function findBeds(bot) {
     let basePos = {}
     let bedsPos = {}
-    botApi.on(bot.username+'foundbed', (d, pos) => {
-        bedsPos[d] = pos
-        console.log(bedsPos[d])
-    })
     basePos.N = v(0, 66, -64)
     basePos.E = v(64, 66, 0)
     basePos.S = v(0, 66, 64)
     basePos.W = v(-64, 66, 0)
     const directions = Object.keys(basePos)
     for (let i = 0; i < directions.length; i++) {
-        let d = directions[i]
-        if (!bedsPos[d]) {
-            checkBed(bot, d, basePos, 0, true, true)
-        }
+        let direction = directions[i]
+        if (bedsPos[direction]) continue
+        botApi.once(bot.username+'foundbed'+direction, (pos) => {
+            bedsPos[direction] = pos
+            console.log(pos)
+        })
+        checkBed(bot, direction, basePos, 0, true)
     }
 }
 
@@ -480,13 +465,14 @@ async function playBedWars(bot) {
     })
 
 }
+let bot
 
 function newBot(options) {
     let joinBW = false
     //pathfinder settings
     let usrname = options.username
-    let updatedMapName = false
-    const bot = mineflayer.createBot(options)
+    let updatedMapName =true
+    bot = mineflayer.createBot(options)
     bot.once('login', ()=> {
         botApi.emit("login", bot.username)
         addControlls(options, bot)
@@ -497,26 +483,33 @@ function newBot(options) {
         if(idScriptCheck.checked && idScriptPath.value) { startScript(bot.username, idScriptPath.files[0].path)}
         bot.loadPlugin(pathfinder)
         const defaultMove = new Movements(bot)
-        defaultMove.scafoldingBlocks.push([157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172])
+        defaultMove.scafoldingBlocks = [157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172]
         bot.pathfinder.setMovements(defaultMove)
     });
     bot.on('spawn', ()=> {
         sendLog("spawned")
-        if(bot.scoreboard['1'].title.toLowerCase() === 'bed wars') {
-        sendLog(`<strong>${usrname} joined Bedwars</strong>`)
-            //findBeds(bot)
-            collectRec(bot)
-            updatedMapName = false
+        let inBW = false
+        try {
+            if(bot.scoreboard['1'].title.toLowerCase().includes('bed wars')) {
+                sendLog(`<strong>${usrname} joined Bedwars</strong>`)
+                updatedMapName = true
+                inBW = true
+            }
+        } catch (error) {}
+        if (!inBW) {
+            botApi.emit(bot.username+'resetJoinBW')
         }
     });
     bot.on("teamUpdated", (team)=> {
         /*addPlayers(Object.keys(team['membersMap']))*/
         if (encodeURIComponent(team['team']) === '%C2%A76%C2%A7r') {
+            console.log(team)
             const teamExtraPre = team['prefix']['json']['extra']
             if (teamExtraPre['0']['text'].toLowerCase().includes('map')) {
                 if (updatedMapName) {
                     let mapname = teamExtraPre['1']['text']
                     mapname += team['suffix']['json']['text']
+                    console.log(mapname)
                     botApi.emit('mapNamed', mapname)
                     updatedMapName = false
                 } else {

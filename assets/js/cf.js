@@ -123,6 +123,7 @@ function getBotInfo(botName, n) {
             host: idIp.value.split(':')[0] ? idIp.value.split(':')[0] : "herobrine.org",
             port: idIp.value.split(':')[1] ? idIp.value.split(':')[1] : 25565,
             username: unm ? unm : newUsername(),
+            version: '1.8.8',
             onMsaCode: function(data) {
                 sendLog(`<li> <img src="./assets/icons/app/code.svg" class="icon-sm" style="filter: brightness(0) saturate(100%) invert(28%) sepia(100%) saturate(359%) hue-rotate(172deg) brightness(93%) contrast(89%)">[${botName}] First time signing in. Please authenticate now: To sign in, use a web browser to open the page https://www.microsoft.com/link and enter the code: ${data.user_code} to authenticate. </li>`)
             }
@@ -201,9 +202,10 @@ function exeAll(command, a1, a2, botList) {
     async function startcmd(a1, a2) {
         for (var i = 0; i < list.length; i++) {
             botApi.emit((list[i] + command), a1, a2)
-            await delay(idLinearValue.value)
             if(command === 'reconnect') {
                 await delay(idJoinDelay.value ? idJoinDelay.value : 1000)
+            } else {
+                await delay(idLinearValue.value)
             }
         }
     }
