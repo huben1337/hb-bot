@@ -9,6 +9,7 @@ const { GoalNear } = require('mineflayer-pathfinder').goals
 const fs = require('fs');
 const { count } = require("console");
 const { on } = require("events");
+const { version } = require("os");
 let currentTime = Date.now()
 let accData = []
 
@@ -298,18 +299,17 @@ function addControlls(options, bot) {
     })
     // join bedwars api and functions setup
     let dontJoinBW = false
-    let cancelBW = false
     botApi.on(bot.username+'resetJoinBW', () => {
         dontJoinBW = false
     })
-    botApi.on(bot.username+'cancelBW', () => {
-        cancelBW = true
-        dontJoinBW = false
-    })
-    
+
     botApi.on(bot.username+'joinBW', (mode, bypass) => {
         if(dontJoinBW && !bypass) return
         dontJoinBW = true
+        let cancelBW = false
+        botApi.on(bot.username+'cancelBW', () => {
+            cancelBW = true
+        })
         const actions = [19, mode]
         const titles = ['{"text":"Games"}', '{"text":"BedWars"}']
         const backActions = 16
@@ -328,7 +328,6 @@ function addControlls(options, bot) {
         }
         console.log(bot.username, "going to Lobby")
         bot.once('spawn', () => {
-            dontJoinBW = false
             if(cancelBW) return
             botApi.emit(bot.username+'joinBW', mode, true)
         })
@@ -468,6 +467,7 @@ async function playBedWars(bot) {
 let bot
 
 function newBot(options) {
+    let IndexDepOnVer = '1'
     let joinBW = false
     //pathfinder settings
     let usrname = options.username
@@ -485,6 +485,9 @@ function newBot(options) {
         const defaultMove = new Movements(bot)
         defaultMove.scafoldingBlocks = [157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172]
         bot.pathfinder.setMovements(defaultMove)
+        if (bot.version === '1.8.8') {
+            IndexDepOnVer = 0
+        }
     });
     bot.on('spawn', ()=> {
         sendLog("spawned")
@@ -492,12 +495,13 @@ function newBot(options) {
         try {
             if(bot.scoreboard['1'].title.toLowerCase().includes('bed wars')) {
                 sendLog(`<strong>${usrname} joined Bedwars</strong>`)
-                updatedMapName = true
+                //updatedMapName = true
                 inBW = true
             }
         } catch (error) {}
         if (!inBW) {
             botApi.emit(bot.username+'resetJoinBW')
+            updatedMapName = true
         }
     });
     bot.on("teamUpdated", (team)=> {
@@ -505,9 +509,9 @@ function newBot(options) {
         if (encodeURIComponent(team['team']) === '%C2%A76%C2%A7r') {
             console.log(team)
             const teamExtraPre = team['prefix']['json']['extra']
-            if (teamExtraPre['0']['text'].toLowerCase().includes('map')) {
+            if (teamExtraPre[`${IndexDepOnVer}`]['text'].toLowerCase().includes('map') || team['prefix']['text'].toLowerCase().includes('map')) {
                 if (updatedMapName) {
-                    let mapname = teamExtraPre['1']['text']
+                    let mapname = teamExtraPre[IndexDepOnVer]['text']
                     mapname += team['suffix']['json']['text']
                     console.log(mapname)
                     botApi.emit('mapNamed', mapname)
@@ -717,4 +721,4 @@ async function saveAccData(stringList) {
         window.close()
     }
 }
-process.on('uncaughtException', (err) => {sendLog(`<li> <img src="./assets/icons/app/alert-triangle.svg" class="icon-sm" style="filter: brightness(0) saturate(100%) invert(11%) sepia(92%) saturate(6480%) hue-rotate(360deg) brightness(103%) contrast(113%)"> [Internal Error] ${err}</li>`)})
+//process.on('uncaughtException', (err) => {sendLog(`<li> <img src="./assets/icons/app/alert-triangle.svg" class="icon-sm" style="filter: brightness(0) saturate(100%) invert(11%) sepia(92%) saturate(6480%) hue-rotate(360deg) brightness(103%) contrast(113%)"> [Internal Error] ${err}</li>`)})
