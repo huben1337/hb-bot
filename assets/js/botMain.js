@@ -125,13 +125,14 @@ window.addEventListener('DOMContentLoaded', () => {
     idBtnM.addEventListener('click', () => {ipcRenderer.send('minimize')})
     idBtnCpToken.addEventListener('click', () => {clipboard.writeText(masterToken)})
     idBtnJoinBW.addEventListener('click', () => {exeAll('joinBW', idModeBW.value)})
-    idBtnCancelBW.addEventListener('click', () => {exeAll('cancelBW')})
+    idBtnCancelBW.addEventListener('click', () => {exeAll('cancelBW'); exeAll('resetJoinBW')})
     idBtnStartRecCollection.addEventListener('click', () => {exeAll('startRecCollection', idRecCount.value)})
     idBtnStopRecCollection.addEventListener('click', () => {exeAll('stopRecCollection')})
 })
 
 genToken()
 
+//imorting old login data
 let oldLogins
 readCsv()
 async function readCsv() {
@@ -251,6 +252,17 @@ async function pinLoginUser(bot, usrname) {
 }
 
 function addControlls(options, bot) {
+    if (bot.version === '1.8.8') {
+        ids = [265, 266]
+        var getItemID = (entity) => {
+            return entity.metadata['10'].blockId
+        }
+    } else {
+        ids = [728, 732]
+        var getItemID = (entity) => {
+            return entity.metadata['8'].itemId
+        }
+    }
     botApi.once(bot.username+'disconnect', () => {bot.quit()})
     botApi.once(bot.username+'reconnect', () => {bot.quit(); const r = async () => {await delay(idJoinDelay.value ? idJoinDelay.value : 1000); newBot(options)}; if(idCheckAutoRc.checked !== true) r()})
     botApi.on(bot.username+'chat', (o) => { if(idCheckAntiSpam.checked) { bot.chat(o.replaceAll("(SALT)", salt(4))+" "+salt(antiSpamLength.value ? antiSpamLength.value : 5)) } else { bot.chat(o.replaceAll("(SALT)", salt(4))) } })
@@ -307,7 +319,7 @@ function addControlls(options, bot) {
         if(dontJoinBW && !bypass) return
         dontJoinBW = true
         let cancelBW = false
-        botApi.on(bot.username+'cancelBW', () => {
+        botApi.once(bot.username+'cancelBW', () => {
             cancelBW = true
         })
         const actions = [19, mode]
@@ -334,8 +346,8 @@ function addControlls(options, bot) {
         bot.chat("/lobby 1")
     })
 
-    botApi.on(bot.username+'startRecCollection', () => {
-        collectRec(bot)
+    botApi.on(bot.username+'startRecCollection', (number) => {
+        collectRec(bot, number, ids, getItemID)
     })
 
     botApi.on('mid', () => {
@@ -368,15 +380,18 @@ function navigateWindow(bot, actions, titles, backActions) {
     return
 }
 
-async function collectRec(bot, count) {
+
+async function collectRec(bot, count, ids, getItemID) {
     let done = false
     botApi.once(bot.username+'stopRecCollection', () => {
         done = true
     })
     bot.once("itemDrop", async (entity) => {
         if(done) return
-        const id = entity.metadata[8].itemId
-        if(id === 728 || id === 732) {
+        console.log(entity)
+        const id = getItemID(entity)
+        if(ids.includes(id)) {
+            console.log("dropped iron or gold")
             const p = entity.position
             bot.pathfinder.setGoal(new GoalNear(p.x, (p.y + 0.5), p.z, 0.5))
             await delay(2000)
@@ -396,7 +411,7 @@ async function collectRec(bot, count) {
             }
         }
         if(done) return
-        collectRec(bot)
+        collectRec(bot, count, ids)
     })
     return
 }
@@ -464,15 +479,14 @@ async function playBedWars(bot) {
     })
 
 }
-let bot
 
 function newBot(options) {
-    let IndexDepOnVer = '1'
+    let IndexDepOnVer
     let joinBW = false
     //pathfinder settings
     let usrname = options.username
     let updatedMapName =true
-    bot = mineflayer.createBot(options)
+    const bot = mineflayer.createBot(options)
     bot.once('login', ()=> {
         botApi.emit("login", bot.username)
         addControlls(options, bot)
@@ -481,13 +495,18 @@ function newBot(options) {
     bot.once('spawn', ()=> {
         botApi.emit("spawn", bot.username)
         if(idScriptCheck.checked && idScriptPath.value) { startScript(bot.username, idScriptPath.files[0].path)}
-        bot.loadPlugin(pathfinder)
-        const defaultMove = new Movements(bot)
-        defaultMove.scafoldingBlocks = [157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172]
-        bot.pathfinder.setMovements(defaultMove)
+        let scaffoldingBlocks = []
         if (bot.version === '1.8.8') {
             IndexDepOnVer = 0
+            scaffoldingBlocks = [35]
+        } else {
+            IndexDepOnVer = 1
+            scaffoldingBlocks = [157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172]
         }
+        bot.loadPlugin(pathfinder)
+        const defaultMove = new Movements(bot)
+        defaultMove.scafoldingBlocks = scaffoldingBlocks
+        bot.pathfinder.setMovements(defaultMove)
     });
     bot.on('spawn', ()=> {
         sendLog("spawned")
@@ -501,7 +520,7 @@ function newBot(options) {
         } catch (error) {}
         if (!inBW) {
             botApi.emit(bot.username+'resetJoinBW')
-            updatedMapName = true
+            updatedMapName = false
         }
     });
     bot.on("teamUpdated", (team)=> {
@@ -550,6 +569,9 @@ function newBot(options) {
     
     bot.on('messagestr', (message) => {
         if(message === 'There should be at least 12 for game to begin!') return
+        if (message === 'BedWars') {
+            sendLog(`<strong>${usrname}'s Game of Bedwars started</strong>`)
+        }
         if(idBotList.getElementsByTagName("li").length <= 2) {
             sendLog(message)
         }
