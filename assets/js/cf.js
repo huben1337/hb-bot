@@ -1,9 +1,8 @@
-const mineflayer = require('mineflayer');
+const { ipcRenderer } = require("electron")
 const { EventEmitter } = require('events')
+const appApi = new EventEmitter()
 const socks = require('socks').SocksClient
 const ProxyAgent = require('proxy-agent')
-const botApi = new EventEmitter()
-const fetch = require('node-fetch')
 const fs = require('fs')
 let stopBot = false
 
@@ -26,7 +25,7 @@ function connectBot() {
 }
 
 //bot stop event listener
-botApi.on('stopBots', () => {stopBot = true})
+appApi.on('stopBots', () => {stopBot = true})
 
 //connection methods
 async function startAccountFile(accountFile) {
@@ -63,7 +62,7 @@ async function startWnoName() {
 //send bot info
 function getBotInfo(botName, n) {
     let unm = "";
-    unm = botName.replaceAll("(SALT)", salt(4)).replaceAll("(LEGIT)", genName())
+    unm = botName.toString().replaceAll("(SALT)", salt(4)).replaceAll("(LEGIT)", genName())
     if (idProxyToggle.checked) {
         const file = fs.readFileSync(idProxyFilePath.files[0].path)
         const lines = file.toString().split(/\r?\n/)
@@ -123,10 +122,10 @@ function getBotInfo(botName, n) {
             host: idIp.value.split(':')[0] ? idIp.value.split(':')[0] : "herobrine.org",
             port: idIp.value.split(':')[1] ? idIp.value.split(':')[1] : 25565,
             username: unm ? unm : newUsername(),
-            version: '1.8.8',
+            version: '1.8.8'/*,
             onMsaCode: function(data) {
                 sendLog(`<li> <img src="./assets/icons/app/code.svg" class="icon-sm" style="filter: brightness(0) saturate(100%) invert(28%) sepia(100%) saturate(359%) hue-rotate(172deg) brightness(93%) contrast(89%)">[${botName}] First time signing in. Please authenticate now: To sign in, use a web browser to open the page https://www.microsoft.com/link and enter the code: ${data.user_code} to authenticate. </li>`)
-            }
+            }*/
         };
 
         return options;
@@ -146,7 +145,7 @@ function salt(length) {
 //delay function
 function delay(ms) {
     return new Promise(res => setTimeout(res, ms))
-};
+}
 
 //add players to player list
 function addPlayer(name) {
@@ -163,7 +162,9 @@ function addPlayer(name) {
 
 //remove player from list
 function rmPlayer(name) {
-    if (document.getElementById("list" + name)) document.getElementById("list" + name).remove()
+    const botInList = document.getElementById("list" + name)
+    if (botInList) botInList.remove()
+    //API(name+'removeApi')
     updateBotCount()
 }
 
@@ -196,12 +197,14 @@ function listBots() {
 }
 
 //execute command all bots
-function exeAll(command, a1, a2, botList) {
-    const list = (botList ? botList: listBots())
+function exeAll(command, a1, a2) {
+    const list = listBots()
+    if(!list) return
     startcmd(a1, a2)
     async function startcmd(a1, a2) {
         for (var i = 0; i < list.length; i++) {
-            botApi.emit((list[i] + command), a1, a2)
+            console.log(list[i])
+            window.API(list[i], command, a1, a2)
             if(command === 'reconnect') {
                 await delay(idJoinDelay.value ? idJoinDelay.value : 1000)
             } else {
@@ -237,7 +240,7 @@ function resetParty() {
     if (leaderList.length === 0) return
     for(var i = 0; i < leaderList.length; i++) {
         if (document.getElementById("plist" + leaderList[i])) document.getElementById("plist" + leaderList[i]).remove()
-        botApi.emit((leaderList[i] + 'chat'), '/party leave')
+        window.API((leaderList[i] + 'chat'), '/party leave')
     }
 }
 
@@ -262,10 +265,10 @@ function makeParty(size) {
             }
             const invmsg = `/party invite ${list[i]}`
             const acptmsg = `/party accept ${leader}`
-            botApi.emit((leader + 'chat'), invmsg)
+            window.API((leader + 'chat'), invmsg)
             sendLog(invmsg)
             await delay(1000)
-            botApi.emit((list[i] + 'chat'), acptmsg)
+            window.API((list[i] + 'chat'), acptmsg)
             sendLog(acptmsg)
             await delay(600)
             await delay(idLinearValue.value)
@@ -275,7 +278,10 @@ function makeParty(size) {
 }
 
 function updateBotCount() {
-    idDownbarBotCount.innerHTML = idBotList.getElementsByTagName("li").length
+    const count = idBotList.getElementsByTagName("li").length
+    idDownbarBotCount.innerHTML = count
+    ipcRenderer.send('updateBotCount', (count))
+
 }
 
 //script controler
@@ -290,9 +296,9 @@ async function startScript(botId, script) {
         if (command === "delay") {
             await delay(args.shift())
         } else if (command === "chat") {
-            botApi.emit(botId + command, lines[i].slice(5))
+            window.API(botId + command, lines[i].slice(5))
         } else {
-            botApi.emit(botId + command, args.shift(), args.shift(1))
+            window.API(botId + command, args.shift(), args.shift(1))
         }
     }
 }
@@ -315,4 +321,47 @@ function  newUsername() {
     return salt(length)
 }
 
-module.exports = { getBotInfo, connectBot, salt, delay, addPlayer, rmPlayer, errBot, sendLog, exeAll, makeParty, addLeader, resetParty, startScript, genName, mineflayer, botApi }
+//token for master
+function genToken(idMasterToken) {
+    masterToken = salt(20)
+    idMasterToken.innerHTML = masterToken
+    return masterToken
+}
+
+//format uptime
+function getTime(from) {
+    const calc = Date.now() - from
+    return convertTime((calc / 1000).toFixed())
+}
+function convertTime(number) {
+    return `${formatTime(Math.floor(number / 60))}:${formatTime(number % 60)}`;
+}
+function formatTime(time) {
+    if (10 > time) return "0" + time;
+    return time;
+}
+
+//save data
+function saveData() {
+    ipcRenderer.send('config', (event, {
+        "botUsename": document.getElementById('botUsename').value,
+        "botConnectIp": document.getElementById('botConnectIp').value,
+        "botCount": document.getElementById('botCount').value,
+        "joinDelay": document.getElementById('joinDelay').value,
+    }))
+}
+function saveAccData() {
+    ipcRenderer.invoke('saveAccData',(event))
+    .then(window.close())
+    .catch((error) => {
+        sendLog(`<li> <img src="./assets/icons/app/alert-triangle.svg" class="icon-sm" style="filter: brightness(0) saturate(100%) invert(11%) sepia(92%) saturate(6480%) hue-rotate(360deg) brightness(103%) contrast(113%)"> [Account Data Save Error] ${error}</li>`)
+    })
+}
+
+//create new bot
+function newBot(options) {
+    console.log(options)
+    ipcRenderer.send('newBot', (options))
+} 
+
+module.exports = { connectBot, addPlayer, rmPlayer, errBot, sendLog, exeAll, makeParty, addLeader, resetParty, genToken, getTime, saveData, saveAccData, appApi, ipcRenderer } 

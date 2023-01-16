@@ -1,0 +1,148 @@
+const { clipboard } = require("electron")
+const { connectBot, addPlayer, rmPlayer, errBot, sendLog, exeAll, makeParty, addLeader, resetParty, genToken, getTime, saveData, saveAccData, appApi, ipcRenderer }  = require( __dirname + '/assets/js/cf.js')
+let currentTime = Date.now()
+//ids
+let idBotUsername = document.getElementById('botUsename')
+let idIp = document.getElementById('botConnectIp')
+let idBotCount = document.getElementById('botCount')
+let idJoinDelay = document.getElementById('joinDelay')
+let idBtnStart = document.getElementById('btnStart')
+let idBtnStop = document.getElementById('btnStop')
+let idBotList = document.getElementById('botList')
+let idBtnDc = document.getElementById('btnDisconnect')
+let idBtnRc = document.getElementById('btnReconnect')
+let idBtnUse = document.getElementById('btnUseHeld')
+let idBtnClose = document.getElementById('btnCloseWin')
+let idBtnStartScript = document.getElementById('btnStartScript')
+let idBtnChat = document.getElementById('btnChatMessage')
+let idChatMessage = document.getElementById('chatMessage')
+let idSpamMessage = document.getElementById('spamMessageBox')
+let idSpamDelay = document.getElementById('spamDelay')
+let idProxyToggle = document.getElementById('useProxy')
+let idDownbarBotCount = document.getElementById('downbarBotCount')
+let idChatBox = document.getElementById('chatBox')
+let idCheckAutoRc = document.getElementById('checkboxAutoRc')
+let idReconDelay = document.getElementById('reconDelay')
+let idConnectSound = document.getElementById('connectSound')
+let idDiconnectSound = document.getElementById('disconnectSound')
+let idErrorSound = document.getElementById('errorSound')
+let idBtnSpam = document.getElementById('startSpam')
+let idBtnSpamStop = document.getElementById('stopSpam')
+let idUptime = document.getElementById('uptime')
+let idHotbarSlot = document.getElementById('hotbarSlot')
+let idBtnSetHotbar = document.getElementById('btnSetHotbar')
+let idBtnWinClickSlot = document.getElementById('windowValue')
+let idClickWinLoR = document.getElementById('clickWindowLorR')
+let idBtnWinClick = document.getElementById('btnWindowClick')
+let idControlValue = document.getElementById('controlValue')
+let idControlStart = document.getElementById('startControl')
+let idControlStop = document.getElementById('stopControl')
+let idLookValue = document.getElementById('lookValue')
+let idBtnLookAt = document.getElementById('setLook')
+let idCheckSprint = document.getElementById('checkboxSprint')
+let idBtnDrop = document.getElementById('btnDrop')
+let idDropValue = document.getElementById('dropValue')
+let idLinearValue = document.getElementById('linearValue')
+let idScriptPath = document.getElementById('scriptPath')
+let idScriptCheck = document.getElementById('scriptCheck')
+let idAccountFileCheck = document.getElementById('accountFileCheck')
+let idAccountFilePath = document.getElementById('accountFilePath')
+let idBtnM = document.getElementById('btnMinimize')
+let idBtnC = document.getElementById('btnClose')
+let idProxyFilePath = document.getElementById('proxyFilePath')
+let idProxyType = document.getElementById('proxyType')
+let idProxyOrderRnd = document.getElementById('proxyOrderRnd')
+let idCheckAntiSpam = document.getElementById('checkAntiSpam')
+let idAntiAfkLoad = document.getElementById('loadAntiAfk')
+let idStartAfk = document.getElementById('startAfk')
+let idStopAfk = document.getElementById('stopAfk')
+let antiSpamLength = document.getElementById('antiSpamLength')
+let idPartySize = document.getElementById('partySize')
+let idBtnPartyMake = document.getElementById('partyMake')
+let idBtnPartyReset = document.getElementById('partyReset')
+let idAddLeader = document.getElementById('addLeader')
+let idBtnAddLeader = document.getElementById('btnaddLeader')
+let idLeaderList = document.getElementById('leaderList')
+let idMasterToken = document.getElementById('masterToken')
+let idBtnCpToken = document.getElementById('cpToken')
+let idBtnJoinBW = document.getElementById('joinBW')
+let idBtnCancelBW = document.getElementById('cancelBW')
+let idModeBW = document.getElementById('modeBW')
+let idBtnStartRecCollection = document.getElementById('startRecCollection')
+let idBtnStopRecCollection = document.getElementById('stopRecCollection')
+let idRecCount = document.getElementById('recCount')
+
+//button listeners
+window.addEventListener('DOMContentLoaded', () => {
+    appApi.setMaxListeners(0)
+    idBtnStart.addEventListener('click', () => {connectBot(); saveData()})
+    idBtnStop.addEventListener('click', () => {appApi.emit('stopBots')})
+    idBtnDc.addEventListener('click', () => {exeAll("disconnect")})
+    idBtnRc.addEventListener('click', () => {exeAll("reconnect")})
+    idBtnUse.addEventListener('click', () => {exeAll("useheld")})
+    idBtnClose.addEventListener('click', () => {exeAll("closewindow")})
+    idBtnSpam.addEventListener('click', () => {appApi.emit("spam", idSpamMessage.value, idSpamDelay.value)})
+    idBtnSpamStop.addEventListener('click', () => {appApi.emit("stopspam")})
+    idBtnChat.addEventListener('click', () => {exeAll("chat", idChatMessage.value)})
+    idBtnSetHotbar.addEventListener('click', () => {exeAll("sethotbar", idHotbarSlot.value)})
+    idBtnWinClick.addEventListener('click', () => {exeAll("winclick", idBtnWinClickSlot.value, idClickWinLoR.value)})
+    idControlStart.addEventListener('click', () => {exeAll("startControl", idControlValue.value)})
+    idControlStop.addEventListener('click', () => {exeAll("stopControl", idControlValue.value)})
+    idBtnLookAt.addEventListener('click', () => {exeAll("look", idLookValue.value)})
+    idCheckSprint.addEventListener('click', () => {exeAll("sprintcheck", idCheckSprint.checked)})
+    idBtnDrop.addEventListener('click', () => {exeAll("drop", idDropValue.value)})
+    idBtnStartScript.addEventListener('click', () => {exeAll('startscript')})
+    idStartAfk.addEventListener('click', () => {exeAll('afkon')})
+    idStopAfk.addEventListener('click', () => {exeAll('afkoff')})
+    idBtnAddLeader.addEventListener('click', () => {addLeader(idAddLeader.value)})
+    idBtnPartyMake.addEventListener('click', () => {makeParty(idPartySize.value)})
+    idBtnPartyReset.addEventListener('click', () => {resetParty()})
+    idBtnC.addEventListener('click', () => {saveData(); saveAccData();})
+    idBtnM.addEventListener('click', () => {ipcRenderer.send('minimize')})
+    idBtnCpToken.addEventListener('click', () => {clipboard.writeText(masterToken)})
+    idBtnJoinBW.addEventListener('click', () => {exeAll('joinBedWars', idModeBW.value)})
+    idBtnCancelBW.addEventListener('click', () => {exeAll('cancelBW')})
+    idBtnStartRecCollection.addEventListener('click', () => {exeAll('startRecCollection', idRecCount.value)})
+    idBtnStopRecCollection.addEventListener('click', () => {exeAll('stopRecCollection')})
+})
+
+//restore app
+ipcRenderer.on('restore', (event, data) => {
+    Object.keys(data).forEach(v => {
+        document.getElementById(v).value = data[v]
+    });
+})
+
+ipcRenderer.send('newMasterToken', genToken(idMasterToken))
+
+ipcRenderer.on('sendLog', (event, msg) => {
+    sendLog(msg)
+})
+
+ipcRenderer.on('rmPlayer', (event, name) => {
+    rmPlayer(name)
+})
+
+ipcRenderer.on('addPlayer', (event, name) => {
+    addPlayer(name)
+})
+
+appApi.on('spam', (msg, dl) => {
+    appApi.once('stopspam', ()=> {clearInterval(chatSpam)})
+    let chatSpam = setInterval(() => {
+        exeAll("chat", msg)
+    }, (dl ? dl: 1000));
+})
+
+//uptime counter
+idBtnStart.addEventListener('click', () => {
+    idBtnStart.addEventListener('click', () => {
+        currentTime = Date.now()
+        clearInterval(botUptime)
+        idUptime.innerHTML = getTime(currentTime)
+    })
+    
+let botUptime = setInterval(() => {
+    idUptime.innerHTML = getTime(currentTime)
+}, 1000);
+})

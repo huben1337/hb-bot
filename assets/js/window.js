@@ -1,5 +1,5 @@
 const { BrowserWindow } = require('electron')
-
+const path = require('path')
 class Window extends BrowserWindow {
   constructor ({ file }) {
     super({
@@ -11,12 +11,13 @@ class Window extends BrowserWindow {
       devTools: false,
       titleBarStyle: 'hidden',
       webPreferences: {
-        nodeIntegration: true,
-        contextIsolation: false
+      contextIsolation: false,
+      nodeIntegration: true,
+      preload: path.join(__dirname, 'preload.js')
       }
     })
     this.loadFile(file)
-    //this.webContents.openDevTools()
+    this.webContents.openDevTools()
     this.once('ready-to-show', () => {
       this.show()
     })
