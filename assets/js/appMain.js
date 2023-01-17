@@ -1,5 +1,5 @@
 const { clipboard } = require("electron")
-const { connectBot, addPlayer, rmPlayer, errBot, sendLog, exeAll, makeParty, addLeader, resetParty, genToken, getTime, saveData, saveAccData, appApi, ipcRenderer }  = require( __dirname + '/assets/js/cf.js')
+const { connectBot, addPlayer, rmPlayer, sendLog, exeAll, makeParty, addLeader, resetParty, getTime, saveData, saveAccData, appApi, ipcRenderer } = require( __dirname + '/assets/js/cf.js')
 let currentTime = Date.now()
 //ids
 let idBotUsername = document.getElementById('botUsename')
@@ -99,9 +99,9 @@ window.addEventListener('DOMContentLoaded', () => {
     idBtnPartyReset.addEventListener('click', () => {resetParty()})
     idBtnC.addEventListener('click', () => {saveData(); saveAccData();})
     idBtnM.addEventListener('click', () => {ipcRenderer.send('minimize')})
-    idBtnCpToken.addEventListener('click', () => {clipboard.writeText(masterToken)})
-    idBtnJoinBW.addEventListener('click', () => {exeAll('joinBedWars', idModeBW.value)})
-    idBtnCancelBW.addEventListener('click', () => {exeAll('cancelBW')})
+    idBtnCpToken.addEventListener('click', () => {clipboard.writeText(idMasterToken.innerHTML)})
+    idBtnJoinBW.addEventListener('click', () => {exeAll('joinBedwars', idModeBW.value)})
+    idBtnCancelBW.addEventListener('click', () => {exeAll('cancelJoinBedwars', undefined, undefined)})
     idBtnStartRecCollection.addEventListener('click', () => {exeAll('startRecCollection', idRecCount.value)})
     idBtnStopRecCollection.addEventListener('click', () => {exeAll('stopRecCollection')})
 })
@@ -113,7 +113,9 @@ ipcRenderer.on('restore', (event, data) => {
     });
 })
 
-ipcRenderer.send('newMasterToken', genToken(idMasterToken))
+ipcRenderer.on('newMasterToken', (event, masterToken) => {
+    idMasterToken.innerHTML = masterToken
+})
 
 ipcRenderer.on('sendLog', (event, msg) => {
     sendLog(msg)

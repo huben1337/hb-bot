@@ -1,7 +1,7 @@
 
 const { ipcMain } = require('electron')
 const mineflayer = require('mineflayer')
-const { regUser, emailLoginUser, pinLoginUser, joinBedWars, collectRec, findBeds, sendLog, delay, salt, mainWindow, botApi } = require('./utils.js')
+const { regUser, emailLoginUser, pinLoginUser, joinBedWars, collectRec, findBeds, sendLog, delay, salt, genToken, mainWindow, botApi } = require('./utils.js')
 let botCount = 0
 let botList = {}
 
@@ -49,7 +49,7 @@ ipcMain.on('API', (event, username, command, a1, a2) => {
 let masterInQue = false
 let masterCommandInQue = false
 let master
-let masterToken
+let masterToken = genToken()
 
 //bot class
 class Hot {
@@ -61,6 +61,8 @@ class Hot {
         this.usrname = options.username
         this.updatedMapName = true
         this.antiAfkLoaded = false
+        this.dontJoinBW = false
+        this.cancelBW = false
         const bot = mineflayer.createBot(options)
         this.bot = bot
         bot.once('login', ()=> {
@@ -191,7 +193,7 @@ class Hot {
                 masterInQue = true
                 sendLog(`The Master is now: ${origin}`)
                 master = origin
-                masterToken = genToken(idMasterToken)
+                masterToken = genToken()
                 masterInQue = false
                 return
             }
@@ -307,18 +309,16 @@ class Hot {
         //if(idCheckSprint.checked === true) {bot.setControlState('sprint', true)} else {bot.setControlState('sprint', false)}
     }
     
-    dontJoinBW = false
-    cancelBW = false
     // join bedwars api and functions setup
     
-    joinBedWars(mode) {
+    joinBedwars(mode) {
         if(this.dontJoinBW) return
         joinBedWars(this, mode)
     }
     collectRec(number) {
         collectRec(this, number)
     }
-    cancelBW() {
+    cancelJoinBedwars() {
         this.cancelBW = true
         this.dontJoinBW = false
     }

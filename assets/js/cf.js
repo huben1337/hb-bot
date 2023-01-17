@@ -168,12 +168,6 @@ function rmPlayer(name) {
     updateBotCount()
 }
 
-//log error
-function errBot(name) {
-    rmPlayer(name)
-    updateBotCount()
-}
-
 //console logs
 function sendLog(log) {
     const b = document.createElement("li")
@@ -321,13 +315,6 @@ function  newUsername() {
     return salt(length)
 }
 
-//token for master
-function genToken(idMasterToken) {
-    masterToken = salt(20)
-    idMasterToken.innerHTML = masterToken
-    return masterToken
-}
-
 //format uptime
 function getTime(from) {
     const calc = Date.now() - from
@@ -364,4 +351,4 @@ function newBot(options) {
     ipcRenderer.send('newBot', (options))
 } 
 
-module.exports = { connectBot, addPlayer, rmPlayer, errBot, sendLog, exeAll, makeParty, addLeader, resetParty, genToken, getTime, saveData, saveAccData, appApi, ipcRenderer } 
+module.exports = { connectBot, addPlayer, rmPlayer, sendLog, exeAll, makeParty, addLeader, resetParty, getTime, saveData, saveAccData, appApi, ipcRenderer } 

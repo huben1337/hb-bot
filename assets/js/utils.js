@@ -1,4 +1,3 @@
-const { ipcMain } = require('electron')
 const { EventEmitter } = require('events')
 const botApi = new EventEmitter()
 const { oldLogins, mainWindow } = require('./../../main.js')
@@ -6,6 +5,7 @@ const v = require('vec3')
 
 //http get function
 const https = require('https')
+const { ipcMain } = require('electron')
 async function httpsGet(url) {
     return new Promise((resolve, reject) => {
         https.get(url, (response) => {
@@ -177,7 +177,7 @@ async function joinBedWars(that, mode) {
     console.log(bot.username, "going to Lobby")
     bot.once('spawn', () => {
         if(that.cancelBW) return
-        joinBedWars(bot, mode, false)
+        joinBedWars(that, mode)
     })
     bot.chat("/lobby 1")
 }
@@ -294,6 +294,13 @@ function delay(ms) {
     return new Promise(res => setTimeout(res, ms))
 }
 
+//token for master
+function genToken() {
+    const masterToken = salt(20)
+    mainWindow.webContents.send('newMasterToken', masterToken)
+    return masterToken
+}
+
 //set up the API
 
 botApi.on("login", (name)=> {
@@ -312,8 +319,8 @@ botApi.on("end", (name, reason)=> {
     sendLog(`<li> <img src="./assets/icons/app/alert-triangle.svg" class="icon-sm" style="filter: brightness(0) saturate(100%) invert(100%) sepia(61%) saturate(4355%) hue-rotate(357deg) brightness(104%) contrast(104%)"> [${name}] ${reason}</li>`)
 })
 botApi.on("error", (name, err)=> {
-    errBot(name)
+    mainWindow.webContents.send('rmPlayer', name)
     sendLog(`<li> <img src="./assets/icons/app/alert-triangle.svg" class="icon-sm" style="filter: brightness(0) saturate(100%) invert(89%) sepia(82%) saturate(799%) hue-rotate(1deg) brightness(103%) contrast(102%)"> [${name}] ${err}</li>`)
 })
 
-module.exports = { regUser, emailLoginUser, pinLoginUser, joinBedWars, collectRec, findBeds, sendLog, delay, salt, mainWindow, botApi }
+module.exports = { regUser, emailLoginUser, pinLoginUser, joinBedWars, collectRec, findBeds, sendLog, delay, salt, genToken, mainWindow, botApi }
