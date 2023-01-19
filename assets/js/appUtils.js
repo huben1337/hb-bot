@@ -40,7 +40,7 @@ async function startAccountFile(accountFile) {
 }
 async function startWname() {
     for (var i = 0; i < idBotCount.value; i++) {
-        if (stopBot) break;
+        if (stopBot) break
         let options = getBotInfo(idBotUsername.value, i)
         if (idBotUsername.value.includes("(SALT)") || idBotUsername.value.includes("(LEGIT)")) {
             newBot(options)
@@ -53,7 +53,7 @@ async function startWname() {
 }
 async function startWnoName() {
     for (var i = 0; i < idBotCount.value; i++) {
-        if (stopBot) break;
+        if (stopBot) break
         newBot(getBotInfo(idBotUsername.value, i))
         await delay(idJoinDelay.value ? idJoinDelay.value : 1000)
     }
@@ -61,14 +61,14 @@ async function startWnoName() {
 
 //send bot info
 function getBotInfo(botName, n) {
-    let unm = "";
+    let unm = ""
     unm = botName.toString().replaceAll("(SALT)", salt(4)).replaceAll("(LEGIT)", genName())
     if (idProxyToggle.checked) {
         const file = fs.readFileSync(idProxyFilePath.files[0].path)
         const lines = file.toString().split(/\r?\n/)
         const rnd = Math.floor(Math.random() * lines.length)
-        let proxyHost = '';
-        let proxyPort = '';
+        let proxyHost = ''
+        let proxyPort = ''
 
         //setting up proxy parameters
         if (idProxyOrderRnd.checked) {
@@ -98,9 +98,9 @@ function getBotInfo(botName, n) {
                 }, (err, info) => {
                     if (err) {
                         sendLog(`[ProxyError]-> [${unm}]-> [proxy:port]-> ${err}`)
-                        return;
+                        return
                     }
-                    client.setSocket(info.socket);
+                    client.setSocket(info.socket)
                     client.emit('connect')
                 })
             },
@@ -112,34 +112,28 @@ function getBotInfo(botName, n) {
             host: idIp.value.split(':')[0] ? idIp.value.split(':')[0] : "herobrine.org",
             port: idIp.value.split(':')[1] ? idIp.value.split(':')[1] : 25565,
             username: unm ? unm : newUsername(),
-            onMsaCode: function(data) {
-                sendLog(`<li> <img src="./assets/icons/app/code.svg" class="icon-sm" style="filter: brightness(0) saturate(100%) invert(28%) sepia(100%) saturate(359%) hue-rotate(172deg) brightness(93%) contrast(89%)">[${botName}] First time signing in. Please authenticate now: To sign in, use a web browser to open the page https://www.microsoft.com/link and enter the code: ${data.user_code} to authenticate. </li>`)
-            }
-        };
-        return options;
+        }
+        return options
     } else {
         options = {
             host: idIp.value.split(':')[0] ? idIp.value.split(':')[0] : "herobrine.org",
             port: idIp.value.split(':')[1] ? idIp.value.split(':')[1] : 25565,
             username: unm ? unm : newUsername(),
-            version: '1.8.8'/*,
-            onMsaCode: function(data) {
-                sendLog(`<li> <img src="./assets/icons/app/code.svg" class="icon-sm" style="filter: brightness(0) saturate(100%) invert(28%) sepia(100%) saturate(359%) hue-rotate(172deg) brightness(93%) contrast(89%)">[${botName}] First time signing in. Please authenticate now: To sign in, use a web browser to open the page https://www.microsoft.com/link and enter the code: ${data.user_code} to authenticate. </li>`)
-            }*/
-        };
+            version: '1.8.8',
+        }
 
-        return options;
+        return options
     }
 }
 
 //random char
 function salt(length) {
-    var result = '';
-    var characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_';
+    var result = ''
+    var characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_'
     for (var i = 0; i < length; i++) {
-        result += characters.charAt(Math.floor(Math.random() * characters.length));
+        result += characters.charAt(Math.floor(Math.random() * characters.length))
     }
-    return result;
+    return result
 }
 
 //delay function
@@ -157,6 +151,7 @@ function addPlayer(name) {
     })
     idBotList.appendChild(b)
     idBotList.scrollTop = idBotList.scrollHeight
+    if(idScriptCheck.checked && idScriptPath.value) { startScript(name, idScriptPath.files[0].path)}
     updateBotCount()
 }
 
@@ -179,7 +174,7 @@ function sendLog(log) {
 function listBots() {
     const botList = idBotList.getElementsByTagName("li")
     const len = botList.length
-    if (len === 0) return;
+    if (len === 0) return
     let list = []
 
     for (var i = 0; i < len; i++) {
@@ -286,7 +281,7 @@ async function startScript(botId, script) {
 
     for (var i = 0; i < lines.length; i++) {
         const args = lines[i].split(" ")
-        const command = args.shift().toLowerCase();
+        const command = args.shift().toLowerCase()
         if (command === "delay") {
             await delay(args.shift())
         } else if (command === "chat") {
@@ -321,11 +316,11 @@ function getTime(from) {
     return convertTime((calc / 1000).toFixed())
 }
 function convertTime(number) {
-    return `${formatTime(Math.floor(number / 60))}:${formatTime(number % 60)}`;
+    return `${formatTime(Math.floor(number / 60))}:${formatTime(number % 60)}`
 }
 function formatTime(time) {
-    if (10 > time) return "0" + time;
-    return time;
+    if (10 > time) return "0" + time
+    return time
 }
 
 //save data
@@ -347,7 +342,6 @@ function saveAccData() {
 
 //create new bot
 function newBot(options) {
-    console.log(options)
     ipcRenderer.send('newBot', (options))
 } 
 

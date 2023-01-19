@@ -1,5 +1,5 @@
 const { clipboard } = require("electron")
-const { connectBot, addPlayer, rmPlayer, sendLog, exeAll, makeParty, addLeader, resetParty, getTime, saveData, saveAccData, appApi, ipcRenderer } = require( __dirname + '/assets/js/cf.js')
+const { connectBot, addPlayer, rmPlayer, sendLog, exeAll, makeParty, addLeader, resetParty, getTime, saveData, saveAccData, appApi, ipcRenderer } = require( __dirname + '/assets/js/appUtils.js')
 let currentTime = Date.now()
 //ids
 let idBotUsername = document.getElementById('botUsename')

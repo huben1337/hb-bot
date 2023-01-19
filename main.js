@@ -1,9 +1,8 @@
 const { app, ipcMain, BrowserWindow} = require('electron')
-const window = require('./assets/js/window')
+const Window = require('./assets/js/window')
 const Store = require('electron-store')
 const store = new Store()
 const fs = require('fs')
-const { runInContext } = require('vm')
 const dataPath = app.getPath("userData")
 let mainWindow
 let oldLogins
@@ -11,18 +10,14 @@ let oldLogins
 app.disableHardwareAcceleration()
 app.whenReady().then(async () => {
     if(!oldLogins) {
-        await new Promise(async (resolve, reject) => {
-            fs.readFile(dataPath + '\\bots_reg.csv', (error, data) => {
-                if (error) {
-                    reject(error)
-                    return
-                }
-                const rows = data.toString().split('\n')
-                resolve(rows)
-            })
-        })
-        .then((rows) => {oldLogins = rows})
-        .catch((error) => {oldLogins = []})
+        try {
+            const data = fs.readFileSync(dataPath + '\\bots_reg.csv')
+            const rows = data.toString().split('\n')
+            oldLogins = rows
+        } catch (error) {
+            console.error(error)
+            oldLogins = []
+        }
     }
     createWindow()
     app.focus()
@@ -34,7 +29,7 @@ app.whenReady().then(async () => {
 })
 
 function createWindow() {
-    mainWindow = new window({
+    mainWindow = new Window({
         file: "index.html"
     })
     module.exports = { oldLogins, mainWindow }
@@ -44,7 +39,7 @@ function createWindow() {
     mainWindow.webContents.once('dom-ready', () => {
         mainWindow.webContents.send('restore', store.get('config'))
         mainWindow.webContents.send('restoreTheme', store.get('theme'))
-        require('./assets/js/bot')
+        require('./assets/js/botMain')
     });
 }
 

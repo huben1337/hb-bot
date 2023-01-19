@@ -1,11 +1,13 @@
-const { ipcMain } = require('electron')
 const { EventEmitter } = require('events')
 const botApi = new EventEmitter()
-const { oldLogins, mainWindow } = require('./../../main.js')
+const { GoalNear } = require('mineflayer-pathfinder').goals
+const { oldLogins, mainWindow } = require('../../main.js')
 const v = require('vec3')
 
 //http get function
 const https = require('https')
+const { ipcMain } = require('electron')
+
 async function httpsGet(url) {
     return new Promise((resolve, reject) => {
         https.get(url, (response) => {
@@ -28,9 +30,7 @@ async function httpsGet(url) {
     });
 }
 
-
 //log in functions
-
 //check for new emails
 async function checkMail(emailSplit) {
     while(true) {
@@ -131,39 +131,33 @@ async function pinLoginUser(bot, usrname) {
 }
 
 //navigate in storage container windows
-function navigateWindow(bot, actions, titles, backActions) {
-    let cancelBW = false
-    botApi.once(bot.username+'cancelBW', () => {
-        cancelBW = true
-    })
+function navigateWindow(that, actions, titles, backActions) {
+    const bot = that.bot
     bot.once("windowOpen", (window) => {
         for (let i = 0; i < actions.length; i++) {
-            if(cancelBW) return
+            if(that.cancelBW) return
             if (window.title === titles[i]) {
                 console.log(bot.username, "opened", titles[i])
                 if(i !== (actions.length - 1)) {
-                    navigateWindow(bot, actions, titles, backActions)
+                    navigateWindow(that, actions, titles, backActions)
                 }
                 bot.clickWindow(actions[i], 0, 0)
                 return
             }        
         }
-        if(cancelBW) return
+        if(that.cancelBW) return
         console.log(bot.username, "navigating back in window")
-        navigateWindow(bot, actions, titles, backActions)
+        navigateWindow(that, actions, titles, backActions)
         bot.clickWindow(backActions, 0, 0)
     })
     return
 }
 
 //join a game of bedwars on herobrine.org
-async function joinBedWars(bot, mode, dontJoinBW) {
-    if(dontJoinBW) return
-    botApi.emit(bot.username+'dontJoinBW')
-    let cancelBW = false
-    botApi.once(bot.username+'cancelBW', () => {
-        cancelBW = true
-    })
+async function joinBedWars(that, mode) {
+    const bot = that.bot
+    that.dontJoinBW = true
+    that.cancelBW = false
     const actions = [19, mode]
     const titles = ['{"text":"Games"}', '{"text":"BedWars"}']
     const backActions = 16
@@ -174,7 +168,7 @@ async function joinBedWars(bot, mode, dontJoinBW) {
         }
         if (bot.scoreboard['1'].name.includes('fb-')) { //1.18.2: (bot.scoreboard['1'].name.includes('fb-')) 1.8.8: (bot.scoreboard['1'].title.toLowerCase().includes('herobrine'))
             console.log(bot.username, "is already in Lobby")
-            navigateWindow(bot, actions, titles, backActions)
+            navigateWindow(that, actions, titles, backActions)
             bot.setQuickBarSlot(0)
             bot.activateItem()
             return
@@ -182,8 +176,8 @@ async function joinBedWars(bot, mode, dontJoinBW) {
     }
     console.log(bot.username, "going to Lobby")
     bot.once('spawn', () => {
-        if(cancelBW) return
-        joinBedWars(bot, mode, false)
+        if(that.cancelBW) return
+        joinBedWars(that, mode)
     })
     bot.chat("/lobby 1")
 }
@@ -300,6 +294,13 @@ function delay(ms) {
     return new Promise(res => setTimeout(res, ms))
 }
 
+//token for master
+function genToken() {
+    const masterToken = salt(20)
+    mainWindow.webContents.send('newMasterToken', masterToken)
+    return masterToken
+}
+
 //set up the API
 
 botApi.on("login", (name)=> {
@@ -318,19 +319,8 @@ botApi.on("end", (name, reason)=> {
     sendLog(`<li> <img src="./assets/icons/app/alert-triangle.svg" class="icon-sm" style="filter: brightness(0) saturate(100%) invert(100%) sepia(61%) saturate(4355%) hue-rotate(357deg) brightness(104%) contrast(104%)"> [${name}] ${reason}</li>`)
 })
 botApi.on("error", (name, err)=> {
-    errBot(name)
+    mainWindow.webContents.send('rmPlayer', name)
     sendLog(`<li> <img src="./assets/icons/app/alert-triangle.svg" class="icon-sm" style="filter: brightness(0) saturate(100%) invert(89%) sepia(82%) saturate(799%) hue-rotate(1deg) brightness(103%) contrast(102%)"> [${name}] ${err}</li>`)
 })
-botApi.on('spam', (msg, dl) => {
-    botApi.once('stopspam', ()=> {clearInterval(chatSpam)})
-    let chatSpam = setInterval(() => {
-        exeAll("chat", msg)
-    }, dl);
-})
 
-ipcMain.on('API', (event, channel, a1, a2) => {
-    console.log(channel, a1, a2)
-    botApi.emit(channel, a1, a2)
-})
-
-module.exports = { regUser, emailLoginUser, pinLoginUser, joinBedWars, collectRec, findBeds, sendLog, delay, salt, mainWindow, botApi }
+module.exports = { regUser, emailLoginUser, pinLoginUser, joinBedWars, collectRec, findBeds, sendLog, delay, salt, genToken, mainWindow, botApi }
