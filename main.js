@@ -43,13 +43,20 @@ function createWindow() {
     });
 }
 
-ipcMain.on('config', (event, config) => {
-    store.set('config', config)
-});
+ipcMain.on('API', (event, command, ...args) => {
+    switch (command) {
+        case 'config':
+            store.set('config', args[0])
+            break;
 
-ipcMain.on('theme', (event, path) => {
-    store.set('theme', path)
-});
+        case 'theme':
+            store.set('theme', path)
+            break;
+    
+        default:
+            break;
+    }
+})
 
 ipcMain.handleOnce('saveAccData', async (event) => {
     if (!stringList) return

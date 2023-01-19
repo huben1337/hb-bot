@@ -1,4 +1,4 @@
-const { ipcRenderer } = require("electron")
+const { contextBridge, ipcRenderer } = require('electron')
 window.getElementById = (id) => {
     return{
         idBotUsername: document.getElementById('botUsename'),
@@ -84,5 +84,22 @@ ipcRenderer.on('getElementState', (event, id, usrname) => {
     if(reply) state = 1
     ipcRenderer.send(usrname+'gotElementState', state)
 })
+/*
+window.API = {
+    send: (command, ...args) => ipcRenderer.send('API', command, ...args)
+}
 
-window.API = (channel, a1, a2) => ipcRenderer.send('API', channel, a1, a2)
+const { contextBridge, ipcRenderer } = require('electron')
+*/
+contextBridge.exposeInMainWorld(
+  'API',
+  {
+    send: (command, ...args) => {
+        console.log(command, ...args)
+        ipcRenderer.send('API', command, ...args)
+    },
+    on: (command, cb) => {
+        ipcRenderer.on(command, (event, ...args) => cb(...args))
+    }
+  }
+)

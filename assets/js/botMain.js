@@ -8,15 +8,11 @@ let botCount = 0
 let botList = {}
 
 function newBot(options) {
-    new Hot(options)
-}
-
-ipcMain.on('newBot', (event, options) => {
     options.onMsaCode = (data) => {
         sendLog(`<li> <img src="./assets/icons/app/code.svg" class="icon-sm" style="filter: brightness(0) saturate(100%) invert(28%) sepia(100%) saturate(359%) hue-rotate(172deg) brightness(93%) contrast(89%)">[${botName}] First time signing in. Please authenticate now: To sign in, use a web browser to open the page https://www.microsoft.com/link and enter the code: ${data.user_code} to authenticate. </li>`)
     }
-    newBot(options)
-})
+    new Hot(options)
+}
 
 async function getElementValue(id, usrname) {
     return new Promise((resolve, reject) => {
@@ -36,18 +32,31 @@ async function getElementState(id, usrname) {
     })
 }
 
-ipcMain.on('newMasterToken', (event, newMasterToken) => {
-    masterToken = newMasterToken
-})
-
 ipcMain.on('updateBotCount', (event, count) => {
     botCount = count
 })
 
-ipcMain.on('API', (event, username, command, a1, a2) => {
-    const commandStr = `botList['${username}'].${command}('${a1}', '${a2}')`
-    console.log(commandStr)
-    eval(commandStr)
+ipcMain.on('API', (event, command, ...args) => {
+    console.log(command, ...args)
+    switch (command) {
+        case 'updateBotCount':
+            botCount = args[0]
+            break;
+
+        case 'newBot':
+            newBot(args[0])
+            break;
+        case 'config':
+            break;
+        default:
+            const commandStr = `botList['${command}'].${args[0]}('${args[1]}', '${args[2]}')`
+            console.log(commandStr)
+            eval(commandStr)
+            break;
+    }
+    //const commandStr = `botList['${username}'].${command}('${a1}', '${a2}')`
+    //console.log(commandStr)
+    //eval(commandStr)
 })
 
 //master system
@@ -146,10 +155,9 @@ class Hot {
             botApi.emit("end", this.usrname, reason)
             const idCheckAutoRc = await getElementState('idCheckAutoRc', this.usrname)
             const joinDelayValue = await getElementValue('idJoinDelay', this.usrname)
-            if(idCheckAutoRc === true) {
+            if(idCheckAutoRc === 1) {
                 await delay(joinDelayValue ? joinDelayValue : 1000)
-                rmPlayer(this.usrname)
-                newBot(options)
+                newBot(this.options)
             }
         })
         bot.once('error', (err)=> {

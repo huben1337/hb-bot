@@ -298,6 +298,7 @@ function delay(ms) {
 function genToken() {
     const masterToken = salt(20)
     mainWindow.webContents.send('newMasterToken', masterToken)
+    console.log(masterToken)
     return masterToken
 }
 

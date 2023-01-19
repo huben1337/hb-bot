@@ -1,5 +1,5 @@
-const { clipboard } = require("electron")
-const { connectBot, addPlayer, rmPlayer, sendLog, exeAll, makeParty, addLeader, resetParty, getTime, saveData, saveAccData, appApi, ipcRenderer } = require( __dirname + '/assets/js/appUtils.js')
+// const { clipboard } = require("electron")
+import { connectBot, addPlayer, rmPlayer, sendLog, exeAll, makeParty, addLeader, resetParty, getTime, saveData, saveAccData } from "./appUtils.js"
 let currentTime = Date.now()
 //ids
 let idBotUsername = document.getElementById('botUsename')
@@ -74,15 +74,15 @@ let idRecCount = document.getElementById('recCount')
 
 //button listeners
 window.addEventListener('DOMContentLoaded', () => {
-    appApi.setMaxListeners(0)
+    //appApi.setMaxListeners(0)
     idBtnStart.addEventListener('click', () => {connectBot(); saveData()})
-    idBtnStop.addEventListener('click', () => {appApi.emit('stopBots')})
+    idBtnStop.addEventListener('click', () => {stopConnecting()})
     idBtnDc.addEventListener('click', () => {exeAll("disconnect")})
     idBtnRc.addEventListener('click', () => {exeAll("reconnect")})
     idBtnUse.addEventListener('click', () => {exeAll("useheld")})
     idBtnClose.addEventListener('click', () => {exeAll("closewindow")})
-    idBtnSpam.addEventListener('click', () => {appApi.emit("spam", idSpamMessage.value, idSpamDelay.value)})
-    idBtnSpamStop.addEventListener('click', () => {appApi.emit("stopspam")})
+    //idBtnSpam.addEventListener('click', () => {appApi.emit("spam", idSpamMessage.value, idSpamDelay.value)})
+    //idBtnSpamStop.addEventListener('click', () => {appApi.emit("stopspam")})
     idBtnChat.addEventListener('click', () => {exeAll("chat", idChatMessage.value)})
     idBtnSetHotbar.addEventListener('click', () => {exeAll("sethotbar", idHotbarSlot.value)})
     idBtnWinClick.addEventListener('click', () => {exeAll("winclick", idBtnWinClickSlot.value, idClickWinLoR.value)})
@@ -98,7 +98,7 @@ window.addEventListener('DOMContentLoaded', () => {
     idBtnPartyMake.addEventListener('click', () => {makeParty(idPartySize.value)})
     idBtnPartyReset.addEventListener('click', () => {resetParty()})
     idBtnC.addEventListener('click', () => {saveData(); saveAccData();})
-    idBtnM.addEventListener('click', () => {ipcRenderer.send('minimize')})
+    //idBtnM.addEventListener('click', () => {ipcRenderer.send('minimize')})
     idBtnCpToken.addEventListener('click', () => {clipboard.writeText(idMasterToken.innerHTML)})
     idBtnJoinBW.addEventListener('click', () => {exeAll('joinBedwars', idModeBW.value)})
     idBtnCancelBW.addEventListener('click', () => {exeAll('cancelJoinBedwars', undefined, undefined)})
@@ -107,35 +107,36 @@ window.addEventListener('DOMContentLoaded', () => {
 })
 
 //restore app
-ipcRenderer.on('restore', (event, data) => {
+
+API.on('restore', (data) => {
     Object.keys(data).forEach(v => {
         document.getElementById(v).value = data[v]
     });
 })
 
-ipcRenderer.on('newMasterToken', (event, masterToken) => {
+API.on('newMasterToken', (masterToken) => {
     idMasterToken.innerHTML = masterToken
 })
 
-ipcRenderer.on('sendLog', (event, msg) => {
+API.on('sendLog', (msg) => {
     sendLog(msg)
 })
 
-ipcRenderer.on('rmPlayer', (event, name) => {
+API.on('rmPlayer', (name) => {
     rmPlayer(name)
 })
 
-ipcRenderer.on('addPlayer', (event, name) => {
+API.on('addPlayer', (name) => {
     addPlayer(name)
 })
-
+/*
 appApi.on('spam', (msg, dl) => {
     appApi.once('stopspam', ()=> {clearInterval(chatSpam)})
     let chatSpam = setInterval(() => {
         exeAll("chat", msg)
     }, (dl ? dl: 1000));
 })
-
+*/
 //uptime counter
 idBtnStart.addEventListener('click', () => {
     idBtnStart.addEventListener('click', () => {

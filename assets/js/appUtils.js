@@ -1,13 +1,88 @@
-const { ipcRenderer } = require("electron")
-const { EventEmitter } = require('events')
-const appApi = new EventEmitter()
+/*
 const socks = require('socks').SocksClient
 const ProxyAgent = require('proxy-agent')
 const fs = require('fs')
+*/
+//ids
+let idBotUsername = document.getElementById('botUsename')
+let idIp = document.getElementById('botConnectIp')
+let idBotCount = document.getElementById('botCount')
+let idJoinDelay = document.getElementById('joinDelay')
+let idBtnStart = document.getElementById('btnStart')
+let idBtnStop = document.getElementById('btnStop')
+let idBotList = document.getElementById('botList')
+let idBtnDc = document.getElementById('btnDisconnect')
+let idBtnRc = document.getElementById('btnReconnect')
+let idBtnUse = document.getElementById('btnUseHeld')
+let idBtnClose = document.getElementById('btnCloseWin')
+let idBtnStartScript = document.getElementById('btnStartScript')
+let idBtnChat = document.getElementById('btnChatMessage')
+let idChatMessage = document.getElementById('chatMessage')
+let idSpamMessage = document.getElementById('spamMessageBox')
+let idSpamDelay = document.getElementById('spamDelay')
+let idProxyToggle = document.getElementById('useProxy')
+let idDownbarBotCount = document.getElementById('downbarBotCount')
+let idChatBox = document.getElementById('chatBox')
+let idCheckAutoRc = document.getElementById('checkboxAutoRc')
+let idReconDelay = document.getElementById('reconDelay')
+let idConnectSound = document.getElementById('connectSound')
+let idDiconnectSound = document.getElementById('disconnectSound')
+let idErrorSound = document.getElementById('errorSound')
+let idBtnSpam = document.getElementById('startSpam')
+let idBtnSpamStop = document.getElementById('stopSpam')
+let idUptime = document.getElementById('uptime')
+let idHotbarSlot = document.getElementById('hotbarSlot')
+let idBtnSetHotbar = document.getElementById('btnSetHotbar')
+let idBtnWinClickSlot = document.getElementById('windowValue')
+let idClickWinLoR = document.getElementById('clickWindowLorR')
+let idBtnWinClick = document.getElementById('btnWindowClick')
+let idControlValue = document.getElementById('controlValue')
+let idControlStart = document.getElementById('startControl')
+let idControlStop = document.getElementById('stopControl')
+let idLookValue = document.getElementById('lookValue')
+let idBtnLookAt = document.getElementById('setLook')
+let idCheckSprint = document.getElementById('checkboxSprint')
+let idBtnDrop = document.getElementById('btnDrop')
+let idDropValue = document.getElementById('dropValue')
+let idLinearValue = document.getElementById('linearValue')
+let idScriptPath = document.getElementById('scriptPath')
+let idScriptCheck = document.getElementById('scriptCheck')
+let idAccountFileCheck = document.getElementById('accountFileCheck')
+let idAccountFilePath = document.getElementById('accountFilePath')
+let idBtnM = document.getElementById('btnMinimize')
+let idBtnC = document.getElementById('btnClose')
+let idProxyFilePath = document.getElementById('proxyFilePath')
+let idProxyType = document.getElementById('proxyType')
+let idProxyOrderRnd = document.getElementById('proxyOrderRnd')
+let idCheckAntiSpam = document.getElementById('checkAntiSpam')
+let idAntiAfkLoad = document.getElementById('loadAntiAfk')
+let idStartAfk = document.getElementById('startAfk')
+let idStopAfk = document.getElementById('stopAfk')
+let antiSpamLength = document.getElementById('antiSpamLength')
+let idPartySize = document.getElementById('partySize')
+let idBtnPartyMake = document.getElementById('partyMake')
+let idBtnPartyReset = document.getElementById('partyReset')
+let idAddLeader = document.getElementById('addLeader')
+let idBtnAddLeader = document.getElementById('btnaddLeader')
+let idLeaderList = document.getElementById('leaderList')
+let idMasterToken = document.getElementById('masterToken')
+let idBtnCpToken = document.getElementById('cpToken')
+let idBtnJoinBW = document.getElementById('joinBW')
+let idBtnCancelBW = document.getElementById('cancelBW')
+let idModeBW = document.getElementById('modeBW')
+let idBtnStartRecCollection = document.getElementById('startRecCollection')
+let idBtnStopRecCollection = document.getElementById('stopRecCollection')
+let idRecCount = document.getElementById('recCount')
+
 let stopBot = false
 
+function stopConnecting() {
+    stopBot = true
+}
+console.log(window.docElements)
 //bot connect method
 function connectBot() {
+    
     stopBot = false
     if (idAccountFileCheck.checked && idAccountFilePath.value) {
         startAccountFile(idAccountFilePath.files[0].path)
@@ -23,9 +98,6 @@ function connectBot() {
         }
     }
 }
-
-//bot stop event listener
-appApi.on('stopBots', () => {stopBot = true})
 
 //connection methods
 async function startAccountFile(accountFile) {
@@ -82,7 +154,7 @@ function getBotInfo(botName, n) {
             proxyPort = lines[n].split(":")[1]
         }
 
-        options = {
+        const options = {
             connect: client => {
                 socks.createConnection({
                     proxy: {
@@ -115,7 +187,7 @@ function getBotInfo(botName, n) {
         }
         return options
     } else {
-        options = {
+        const options = {
             host: idIp.value.split(':')[0] ? idIp.value.split(':')[0] : "herobrine.org",
             port: idIp.value.split(':')[1] ? idIp.value.split(':')[1] : 25565,
             username: unm ? unm : newUsername(),
@@ -159,7 +231,7 @@ function addPlayer(name) {
 function rmPlayer(name) {
     const botInList = document.getElementById("list" + name)
     if (botInList) botInList.remove()
-    //API(name+'removeApi')
+    //API.send(name+'removeApi')
     updateBotCount()
 }
 
@@ -193,7 +265,7 @@ function exeAll(command, a1, a2) {
     async function startcmd(a1, a2) {
         for (var i = 0; i < list.length; i++) {
             console.log(list[i])
-            window.API(list[i], command, a1, a2)
+            API.send(list[i], command, a1, a2)
             if(command === 'reconnect') {
                 await delay(idJoinDelay.value ? idJoinDelay.value : 1000)
             } else {
@@ -229,7 +301,7 @@ function resetParty() {
     if (leaderList.length === 0) return
     for(var i = 0; i < leaderList.length; i++) {
         if (document.getElementById("plist" + leaderList[i])) document.getElementById("plist" + leaderList[i]).remove()
-        window.API((leaderList[i] + 'chat'), '/party leave')
+        API.send((leaderList[i] + 'chat'), '/party leave')
     }
 }
 
@@ -254,10 +326,10 @@ function makeParty(size) {
             }
             const invmsg = `/party invite ${list[i]}`
             const acptmsg = `/party accept ${leader}`
-            window.API((leader + 'chat'), invmsg)
+            API.send((leader + 'chat'), invmsg)
             sendLog(invmsg)
             await delay(1000)
-            window.API((list[i] + 'chat'), acptmsg)
+            API.send((list[i] + 'chat'), acptmsg)
             sendLog(acptmsg)
             await delay(600)
             await delay(idLinearValue.value)
@@ -269,7 +341,7 @@ function makeParty(size) {
 function updateBotCount() {
     const count = idBotList.getElementsByTagName("li").length
     idDownbarBotCount.innerHTML = count
-    ipcRenderer.send('updateBotCount', (count))
+    API.send('updateBotCount', (count))
 
 }
 
@@ -285,9 +357,9 @@ async function startScript(botId, script) {
         if (command === "delay") {
             await delay(args.shift())
         } else if (command === "chat") {
-            window.API(botId + command, lines[i].slice(5))
+            API.send(botId + command, lines[i].slice(5))
         } else {
-            window.API(botId + command, args.shift(), args.shift(1))
+            API.send(botId + command, args.shift(), args.shift(1))
         }
     }
 }
@@ -304,9 +376,9 @@ function genName() {
 
 //name gen v2
 function  newUsername() {
-    min = Math.ceil(5)
-    max = Math.floor(16)
-    var length = Math.floor(Math.random() * (max - min + 1)) + min
+    const min = Math.ceil(5)
+    const max = Math.floor(16)
+    const length = Math.floor(Math.random() * (max - min + 1)) + min
     return salt(length)
 }
 
@@ -325,7 +397,7 @@ function formatTime(time) {
 
 //save data
 function saveData() {
-    ipcRenderer.send('config', (event, {
+    API.send('config', (event, {
         "botUsename": document.getElementById('botUsename').value,
         "botConnectIp": document.getElementById('botConnectIp').value,
         "botCount": document.getElementById('botCount').value,
@@ -333,16 +405,19 @@ function saveData() {
     }))
 }
 function saveAccData() {
+    window.close()
+    /*
     ipcRenderer.invoke('saveAccData',(event))
     .then(window.close())
     .catch((error) => {
         sendLog(`<li> <img src="./assets/icons/app/alert-triangle.svg" class="icon-sm" style="filter: brightness(0) saturate(100%) invert(11%) sepia(92%) saturate(6480%) hue-rotate(360deg) brightness(103%) contrast(113%)"> [Account Data Save Error] ${error}</li>`)
     })
+    */
 }
 
 //create new bot
 function newBot(options) {
-    ipcRenderer.send('newBot', (options))
+    API.send('newBot', (options))
 } 
 
-module.exports = { connectBot, addPlayer, rmPlayer, sendLog, exeAll, makeParty, addLeader, resetParty, getTime, saveData, saveAccData, appApi, ipcRenderer } 
+export { connectBot, addPlayer, rmPlayer, sendLog, exeAll, makeParty, addLeader, resetParty, getTime, saveData, saveAccData } 
