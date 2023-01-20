@@ -9,7 +9,7 @@ const https = require('https')
 const fs = require('fs')
 //get old logins
 
-let oldLogins = []
+let oldLogins
 if(!oldLogins) {
     try {
         const data = fs.readFileSync(dataPath + '\\bots_reg.csv')

@@ -12,7 +12,7 @@ class Window extends BrowserWindow {
       titleBarStyle: 'hidden',
       webPreferences: {
       //contextIsolation: false,
-      nodeIntegration: true,
+      //nodeIntegration: true,
       preload: path.join(__dirname, 'preload.js')
       }
     })

@@ -32,7 +32,6 @@ async function getElementState(id, usrname) {
 }
 
 ipcMain.on('API', (event, channel, ...args) => {
-    console.log(channel, ...args)
     switch (channel) {
         case 'updateBotCount':
             botCount = args[0]
@@ -76,8 +75,8 @@ class Hot {
         const bot = mineflayer.createBot(options)
         this.bot = bot
         bot.once('login', ()=> {
-            botList[`${bot.username}`] = this
             this.usrname = bot.username
+            botList[`${this.usrname}`] = this
             botApi.emit("login", bot.username)
         })
         bot.once('spawn', ()=> {
@@ -145,7 +144,8 @@ class Hot {
                 botApi.emit("kicked", bot.username, reason_text)
             } catch {
                 botApi.emit("kicked", bot.username, reason)
-            } 
+            }
+            this.destruct()
         })
         bot.once('end', async (reason)=> {
             botApi.emit("end", this.usrname, reason)
@@ -155,9 +155,11 @@ class Hot {
                 await delay(joinDelayValue ? joinDelayValue : 1000)
                 newBot(this.options)
             }
+            this.destruct()
         })
         bot.once('error', (err)=> {
             botApi.emit("error", this.usrname, err)
+            this.destruct()
         })
         
         bot.on('messagestr', (message) => {
@@ -169,11 +171,11 @@ class Hot {
                 sendLog(message)
             }
             if(message.includes("/register <email> <email>")) {
-                regUser(bot , this.usrname)
+                regUser(this.bot , this.usrname)
                 return
             }
             if(message.includes("Login with your email address and PIN")) {
-                pinLoginUser(bot , this.usrname)
+                pinLoginUser(this.bot , this.usrname)
                 return
             }
             if(message.includes("Login with your PIN.")) {
@@ -181,11 +183,11 @@ class Hot {
                 return
             }
             if(message.includes("Login with your email address. Press")) {
-                emailLoginUser(bot , this.usrname)
+                emailLoginUser(this.bot , this.usrname)
                 return
             }
             if(message.includes()) {
-                emailLoginUser(bot , this.usrname)
+                emailLoginUser(this.bot , this.usrname)
                 return
             }
             let msg = message.replace(/\s+/g, ' ')
@@ -325,6 +327,9 @@ class Hot {
     cancelJoinBedwars() {
         this.cancelBW = true
         this.dontJoinBW = false
+    }
+    destruct() {
+        botList[`${this.usrname}`] = null
     }
     
 }

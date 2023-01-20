@@ -79,7 +79,7 @@ let stopBot = false
 function stopConnecting() {
     stopBot = true
 }
-console.log(window.docElements)
+
 //bot connect method
 function connectBot() {
     
@@ -408,6 +408,20 @@ function saveConfig() {
 //create new bot
 function newBot(options) {
     API.send('newBot', (options))
-} 
+}
 
-export { connectBot, addPlayer, rmPlayer, sendLog, exeAll, makeParty, addLeader, resetParty, getTime, saveConfig } 
+const spam = {
+    spamInterval: null,
+    stop: () => clearInterval(spam.spamInterval),
+    start: () => {
+        let dl = 1000
+        if(idSpamDelay.value > 1000) {
+            dl = idSpamDelay.value
+        }
+        spam.spamInterval = setInterval(() => {
+            exeAll("chat", idSpamMessage.value)
+        }, (dl))
+    }
+}
+
+export { connectBot, addPlayer, rmPlayer, sendLog, exeAll, makeParty, addLeader, resetParty, getTime, saveConfig, stopConnecting, spam }

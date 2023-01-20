@@ -1,5 +1,5 @@
 // const { clipboard } = require("electron")
-import { connectBot, addPlayer, rmPlayer, sendLog, exeAll, makeParty, addLeader, resetParty, getTime, saveConfig }  from "./appUtils.js"
+import { connectBot, addPlayer, rmPlayer, sendLog, exeAll, makeParty, addLeader, resetParty, getTime, saveConfig, stopConnecting, spam }  from "./appUtils.js"
 let currentTime = Date.now()
 //ids
 let idBotUsername = document.getElementById('botUsename')
@@ -81,8 +81,8 @@ window.addEventListener('DOMContentLoaded', () => {
     idBtnRc.addEventListener('click', () => {exeAll("reconnect")})
     idBtnUse.addEventListener('click', () => {exeAll("useheld")})
     idBtnClose.addEventListener('click', () => {exeAll("closewindow")})
-    //idBtnSpam.addEventListener('click', () => {appApi.emit("spam", idSpamMessage.value, idSpamDelay.value)})
-    //idBtnSpamStop.addEventListener('click', () => {appApi.emit("stopspam")})
+    idBtnSpam.addEventListener('click', () => {spam.start()})
+    idBtnSpamStop.addEventListener('click', () => {spam.stop()})
     idBtnChat.addEventListener('click', () => {exeAll("chat", idChatMessage.value)})
     idBtnSetHotbar.addEventListener('click', () => {exeAll("sethotbar", idHotbarSlot.value)})
     idBtnWinClick.addEventListener('click', () => {exeAll("winclick", idBtnWinClickSlot.value, idClickWinLoR.value)})
@@ -98,7 +98,7 @@ window.addEventListener('DOMContentLoaded', () => {
     idBtnPartyMake.addEventListener('click', () => {makeParty(idPartySize.value)})
     idBtnPartyReset.addEventListener('click', () => {resetParty()})
     idBtnC.addEventListener('click', () => {saveConfig(); window.close()})
-    //idBtnM.addEventListener('click', () => {ipcRenderer.send('minimize')})
+    idBtnM.addEventListener('click', () => {ipcRenderer.send('minimize')})
     idBtnCpToken.addEventListener('click', () => {clipboard.writeText(idMasterToken.innerHTML)})
     idBtnJoinBW.addEventListener('click', () => {exeAll('joinBedwars', idModeBW.value)})
     idBtnCancelBW.addEventListener('click', () => {exeAll('cancelJoinBedwars', undefined, undefined)})
@@ -129,14 +129,7 @@ API.on('rmPlayer', (name) => {
 API.on('addPlayer', (name) => {
     addPlayer(name)
 })
-/*
-appApi.on('spam', (msg, dl) => {
-    appApi.once('stopspam', ()=> {clearInterval(chatSpam)})
-    let chatSpam = setInterval(() => {
-        exeAll("chat", msg)
-    }, (dl ? dl: 1000));
-})
-*/
+
 //uptime counter
 idBtnStart.addEventListener('click', () => {
     idBtnStart.addEventListener('click', () => {
