@@ -21,9 +21,6 @@ function createWindow() {
         file: "index.html"
     })
     module.exports = { app, mainWindow }
-    ipcMain.on('minimize', () => {
-        mainWindow.minimize()
-    })
     mainWindow.webContents.once('dom-ready', () => {
         mainWindow.webContents.send('restore', store.get('config'))
         mainWindow.webContents.send('restoreTheme', store.get('theme'))
@@ -43,7 +40,8 @@ ipcMain.on('API', (event, command, ...args) => {
         case 'theme':
             store.set('theme', path)
             break
-    
+        case 'minimize':
+            mainWindow.minimize()
         default:
             break
     }

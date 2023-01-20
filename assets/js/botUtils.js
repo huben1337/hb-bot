@@ -197,23 +197,22 @@ async function joinBedWars(that, mode) {
 }
 
 //collect recsources by fuínding items and then pathfinding towards them
-async function collectRec(bot, count, ids, getItemID) {
-    let done = false
-    botApi.once(bot.username+'stopRecCollection', () => {
-        done = true
-    })
+async function collectRec(that, count) {
+    that.recCollectionDone = false
+    const bot = that.bot
     bot.once("itemDrop", async (entity) => {
-        if(done) return
-        const id = getItemID(entity)
-        if(ids.includes(id)) {
+        if(that.recCollectionDone) return
+        const id = that.getItemID(entity)
+        if(that.ids.includes(id)) {
             const p = entity.position
             console.log(p)
-            bot.pathfinder.setGoal(new GoalNear(p.x, (p.y + 0.5), p.z, 0.6))
+            //bot.pathfinder.stop()
+            bot.pathfinder.setGoal(new GoalNear(p.x, p.y, p.z, 1))
             await delay(2000)
             let oldCount = 0
-            while (!done) {
+            while (!that.recCollectionDone) {
                 await delay(4000)
-                if(done) return
+                if(that.recCollectionDone) return
                 const ironItems = bot.inventory.items().filter(item => (item.name === "iron_ingot" && item.count < 64))
                 if (ironItems.length === 0) break
                 const newCount = ironItems['0'].count
@@ -224,8 +223,9 @@ async function collectRec(bot, count, ids, getItemID) {
                 oldCount = newCount
             }
         }
-        if(done) return
-        collectRec(bot, count, ids, getItemID)
+        if(that.recCollectionDone) return
+        bot.pathfinder.setGoal(null)
+        collectRec(that, count)
     })
     return
 }

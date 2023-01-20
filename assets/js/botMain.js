@@ -41,6 +41,8 @@ ipcMain.on('API', (event, channel, ...args) => {
             break
         case 'config':
             break
+        case 'minimize':
+            break
         default:
             let commandStr = `botList['${channel}'].${args[0]}(`
             for (let i = 1; i < args.length; i++) {
@@ -49,6 +51,7 @@ ipcMain.on('API', (event, channel, ...args) => {
                 commandStr += ','
             }
             commandStr += ')'
+            console.log(commandStr)
             eval(commandStr)
             break;
     }
@@ -72,6 +75,7 @@ class Hot {
         this.antiAfkLoaded = false
         this.dontJoinBW = false
         this.cancelBW = false
+        this.recCollectionDone = false
         const bot = mineflayer.createBot(options)
         this.bot = bot
         bot.once('login', ()=> {
@@ -99,6 +103,8 @@ class Hot {
             bot.loadPlugin(pathfinder)
             const defaultMove = new Movements(bot)
             defaultMove.scafoldingBlocks = this.scaffoldingBlocks
+            defaultMove.allowSprinting = false
+            defaultMove.canDig = false
             bot.pathfinder.setMovements(defaultMove)
         })
         bot.on('spawn', ()=> {
@@ -291,17 +297,17 @@ class Hot {
         this.bot.afk.stop()
     }
     drop(slot) {
-        if(item) {
-            bot.clickWindow(slot, 0, 0)
-            bot.clickWindow(-999, 0, 0)
+        if(slot) {
+            this.bot.clickWindow(slot, 0, 0)
+            this.bot.clickWindow(-999, 0, 0)
         } else {
             tossAll()
             async function tossAll() {
                 const itemCount = bot.inventory.items().length
                 for (var i = 0; i < itemCount; i++) {
                     if (bot.inventory.items().length === 0) return
-                    const item = bot.inventory.items()[0]
-                    bot.tossStack(item)
+                    const slot = bot.inventory.items()[0]
+                    this.bot.tossStack(slot)
                     await delay(10)
                 }
             }
@@ -315,19 +321,25 @@ class Hot {
         //if(idCheckSprint.checked === true) {bot.setControlState('sprint', true)} else {bot.setControlState('sprint', false)}
     }
     
-    // join bedwars api and functions setup
-    
+    // join bedwars
     joinBedwars(mode) {
         if(this.dontJoinBW) return
         joinBedWars(this, mode)
-    }
-    collectRec(number) {
-        collectRec(this, number)
     }
     cancelJoinBedwars() {
         this.cancelBW = true
         this.dontJoinBW = false
     }
+
+    //collect resources 
+    startRecCollection(number) {
+        collectRec(this, number)
+    }
+    stopRecCollection(number) {
+        this.recCollectionDone = true
+    }
+
+    //remove class object from botList object
     destruct() {
         botList[`${this.usrname}`] = null
     }
