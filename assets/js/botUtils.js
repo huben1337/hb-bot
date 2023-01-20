@@ -1,13 +1,27 @@
+const { ipcMain } = require('electron')
 const { EventEmitter } = require('events')
 const botApi = new EventEmitter()
 const { GoalNear } = require('mineflayer-pathfinder').goals
-const { oldLogins, mainWindow } = require('../../main.js')
+const { app, mainWindow } = require('../../main.js')
+const dataPath = app.getPath("userData")
 const v = require('vec3')
+const https = require('https')
+const fs = require('fs')
+//get old logins
+
+let oldLogins = []
+if(!oldLogins) {
+    try {
+        const data = fs.readFileSync(dataPath + '\\bots_reg.csv')
+        const rows = data.toString().split('\n')
+        oldLogins = rows
+    } catch (error) {
+        console.error(error)
+        oldLogins = []
+    }
+}
 
 //http get function
-const https = require('https')
-const { ipcMain } = require('electron')
-
 async function httpsGet(url) {
     return new Promise((resolve, reject) => {
         https.get(url, (response) => {
@@ -302,7 +316,17 @@ function genToken() {
     return masterToken
 }
 
-//set up the API
+//save login data for registered accounts
+function saveAccData() {
+    try {
+        const data = accData.join('')
+        fs.writeFileSync(dataPath + '\\bots_reg.csv', data , { flag: 'a' })
+    } catch (error) {
+        console.error(error)
+    }
+}
+
+//set up the API for bot events
 
 botApi.on("login", (name)=> {
     mainWindow.webContents.send('addPlayer', name)
@@ -324,4 +348,9 @@ botApi.on("error", (name, err)=> {
     sendLog(`<li> <img src="./assets/icons/app/alert-triangle.svg" class="icon-sm" style="filter: brightness(0) saturate(100%) invert(89%) sepia(82%) saturate(799%) hue-rotate(1deg) brightness(103%) contrast(102%)"> [${name}] ${err}</li>`)
 })
 
-module.exports = { regUser, emailLoginUser, pinLoginUser, joinBedWars, collectRec, findBeds, sendLog, delay, salt, genToken, mainWindow, botApi }
+mainWindow.once('closed', () => {
+    saveAccData()
+    app.quit()
+})
+
+module.exports = { regUser, emailLoginUser, pinLoginUser, joinBedWars, collectRec, findBeds, sendLog, delay, salt, genToken, mainWindow, botApi, ipcMain }

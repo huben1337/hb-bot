@@ -396,7 +396,7 @@ function formatTime(time) {
 }
 
 //save data
-function saveData() {
+function saveConfig() {
     API.send('config', (event, {
         "botUsename": document.getElementById('botUsename').value,
         "botConnectIp": document.getElementById('botConnectIp').value,
@@ -404,20 +404,10 @@ function saveData() {
         "joinDelay": document.getElementById('joinDelay').value,
     }))
 }
-function saveAccData() {
-    window.close()
-    /*
-    ipcRenderer.invoke('saveAccData',(event))
-    .then(window.close())
-    .catch((error) => {
-        sendLog(`<li> <img src="./assets/icons/app/alert-triangle.svg" class="icon-sm" style="filter: brightness(0) saturate(100%) invert(11%) sepia(92%) saturate(6480%) hue-rotate(360deg) brightness(103%) contrast(113%)"> [Account Data Save Error] ${error}</li>`)
-    })
-    */
-}
 
 //create new bot
 function newBot(options) {
     API.send('newBot', (options))
 } 
 
-export { connectBot, addPlayer, rmPlayer, sendLog, exeAll, makeParty, addLeader, resetParty, getTime, saveData, saveAccData } 
+export { connectBot, addPlayer, rmPlayer, sendLog, exeAll, makeParty, addLeader, resetParty, getTime, saveConfig } 

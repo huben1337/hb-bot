@@ -1,5 +1,5 @@
 // const { clipboard } = require("electron")
-import { connectBot, addPlayer, rmPlayer, sendLog, exeAll, makeParty, addLeader, resetParty, getTime, saveData, saveAccData } from "./appUtils.js"
+import { connectBot, addPlayer, rmPlayer, sendLog, exeAll, makeParty, addLeader, resetParty, getTime, saveConfig }  from "./appUtils.js"
 let currentTime = Date.now()
 //ids
 let idBotUsername = document.getElementById('botUsename')
@@ -75,7 +75,7 @@ let idRecCount = document.getElementById('recCount')
 //button listeners
 window.addEventListener('DOMContentLoaded', () => {
     //appApi.setMaxListeners(0)
-    idBtnStart.addEventListener('click', () => {connectBot(); saveData()})
+    idBtnStart.addEventListener('click', () => {connectBot(); saveConfig()})
     idBtnStop.addEventListener('click', () => {stopConnecting()})
     idBtnDc.addEventListener('click', () => {exeAll("disconnect")})
     idBtnRc.addEventListener('click', () => {exeAll("reconnect")})
@@ -97,7 +97,7 @@ window.addEventListener('DOMContentLoaded', () => {
     idBtnAddLeader.addEventListener('click', () => {addLeader(idAddLeader.value)})
     idBtnPartyMake.addEventListener('click', () => {makeParty(idPartySize.value)})
     idBtnPartyReset.addEventListener('click', () => {resetParty()})
-    idBtnC.addEventListener('click', () => {saveData(); saveAccData();})
+    idBtnC.addEventListener('click', () => {saveConfig(); window.close()})
     //idBtnM.addEventListener('click', () => {ipcRenderer.send('minimize')})
     idBtnCpToken.addEventListener('click', () => {clipboard.writeText(idMasterToken.innerHTML)})
     idBtnJoinBW.addEventListener('click', () => {exeAll('joinBedwars', idModeBW.value)})

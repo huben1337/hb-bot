@@ -1,9 +1,8 @@
 
-const { ipcMain } = require('electron')
 const mineflayer = require('mineflayer')
 const pathfinder = require('mineflayer-pathfinder').pathfinder
 const Movements = require('mineflayer-pathfinder').Movements
-const { regUser, emailLoginUser, pinLoginUser, joinBedWars, collectRec, findBeds, sendLog, delay, salt, genToken, mainWindow, botApi } = require('./botUtils.js')
+const { regUser, emailLoginUser, pinLoginUser, joinBedWars, collectRec, findBeds, sendLog, delay, salt, genToken, mainWindow, botApi, ipcMain } = require('./botUtils.js')
 let botCount = 0
 let botList = {}
 
@@ -32,31 +31,28 @@ async function getElementState(id, usrname) {
     })
 }
 
-ipcMain.on('updateBotCount', (event, count) => {
-    botCount = count
-})
-
-ipcMain.on('API', (event, command, ...args) => {
-    console.log(command, ...args)
-    switch (command) {
+ipcMain.on('API', (event, channel, ...args) => {
+    console.log(channel, ...args)
+    switch (channel) {
         case 'updateBotCount':
             botCount = args[0]
-            break;
-
+            break
         case 'newBot':
             newBot(args[0])
-            break;
+            break
         case 'config':
-            break;
+            break
         default:
-            const commandStr = `botList['${command}'].${args[0]}('${args[1]}', '${args[2]}')`
-            console.log(commandStr)
+            let commandStr = `botList['${channel}'].${args[0]}(`
+            for (let i = 1; i < args.length; i++) {
+                commandStr += `'${args[i]}'`
+                if (i + 1 === args.length) break
+                commandStr += ','
+            }
+            commandStr += ')'
             eval(commandStr)
             break;
     }
-    //const commandStr = `botList['${username}'].${command}('${a1}', '${a2}')`
-    //console.log(commandStr)
-    //eval(commandStr)
 })
 
 //master system
