@@ -79,13 +79,13 @@ window.addEventListener('DOMContentLoaded', () => {
     idBtnStop.addEventListener('click', () => {stopConnecting()})
     idBtnDc.addEventListener('click', () => {exeAll("disconnect")})
     idBtnRc.addEventListener('click', () => {exeAll("reconnect")})
-    idBtnUse.addEventListener('click', () => {exeAll("useheld")})
-    idBtnClose.addEventListener('click', () => {exeAll("closewindow")})
+    idBtnUse.addEventListener('click', () => {exeAll("useHeld")})
+    idBtnClose.addEventListener('click', () => {exeAll("closeWindow")})
     idBtnSpam.addEventListener('click', () => {exeAll('spam.start', idSpamMessage.value, idSpamDelay.value, idCheckAntiSpam.checked, antiSpamLength.value)})
     idBtnSpamStop.addEventListener('click', () => {exeAll('spam.stop')})
     idBtnChat.addEventListener('click', () => {exeAll("chat", idChatMessage.value)})
-    idBtnSetHotbar.addEventListener('click', () => {exeAll("sethotbar", idHotbarSlot.value)})
-    idBtnWinClick.addEventListener('click', () => {exeAll("winclick", idBtnWinClickSlot.value, idClickWinLoR.value)})
+    idBtnSetHotbar.addEventListener('click', () => {exeAll("setHotbar", idHotbarSlot.value)})
+    idBtnWinClick.addEventListener('click', () => {exeAll("winClick", idBtnWinClickSlot.value, idClickWinLoR.value)})
     idControlStart.addEventListener('click', () => {exeAll("startControl", idControlValue.value)})
     idControlStop.addEventListener('click', () => {exeAll("stopControl", idControlValue.value)})
     idBtnLookAt.addEventListener('click', () => {exeAll("look", idLookValue.value)})
@@ -128,6 +128,10 @@ API.on('rmPlayer', (name) => {
 
 API.on('addPlayer', (name) => {
     addPlayer(name)
+})
+
+API.on('exeAll', (command, ...args) => {
+    exeAll(command, ...args)
 })
 
 //uptime counter

@@ -37,7 +37,7 @@ function methodByName(command, context , ...args ) {
     for(var i = 0; i < namespaces.length; i++) {
       context = context[namespaces[i]];
     }
-    return context[method].apply(context, args);
+    return context[method](...args);
 }
 
 ipcMain.on('API', async (event, channel, ...args) => {
@@ -58,8 +58,7 @@ ipcMain.on('API', async (event, channel, ...args) => {
             console.log(command, ...args)
             for (let i = 0; i < channel.length; i++) {
                 const bot = channel[i];
-                methodByName(command, botList[`${bot}`] , ...args )
-                continue
+                methodByName(command, botList[bot] , ...args )
                 await delay(dl)
             }
             break
@@ -117,7 +116,6 @@ class Hot {
             bot.pathfinder.setMovements(defaultMove)
         })
         bot.on('spawn', ()=> {
-            sendLog(bot.username, "spawned")
             let inBW = false
             try {
                 if(bot.scoreboard['1'].title.toLowerCase().includes('bed wars')) {
@@ -207,8 +205,8 @@ class Hot {
                 msg = msg.split(']')[1]
                 i = 2
             }
-            msg = msg.split(' ')
-            const origin = msg[i]
+            const msgSplit = msg.split(' ')
+            const origin = msgSplit[i]
             if(!masterInQue && message.includes(masterToken)) {
                 masterInQue = true
                 sendLog(`The Master is now: ${origin}`)
@@ -219,28 +217,17 @@ class Hot {
             }
             if(!masterCommandInQue && origin === master) {
                 masterCommandInQue = true
-                if(msg.length > (i+1)) {
-                    let a1
-                    let a2
-                    const command = msg[i+1]
-                    if(msg.length > (i+2)) {
-                        a1 = msg[i+2].replace(/\;/g, ' ')
-                    }
-                    if(msg.length > (i+3)) {
-                        a2 = msg[i+3]
-                    }
-                    if(command === 'spam') {
-                        mainWindow.webContents.send('spam')
-                        return
-                    }
-                    if(command === 'stopspam') {
-                        mainWindow.webContents.send('spam')
-                        return
-                    }
-                    if(msg[i-1] === 'From') {
-                        botApi.emit((this.usrname+command), a1, a2)
+                if(msgSplit.length > i + 1) {
+                    let cmdMsg = msgSplit.slice(i+1)
+                    const command =  cmdMsg.shift()
+                    let args = []
+                    cmdMsg.forEach(arg => {
+                        args.push(arg.replace(/\;/g, ' '))
+                    })
+                    if(msgSplit[1] === 'From') {
+                        methodByName(command, botList[bot.username], ...args)
                     } else {
-                        exeAll(command, a1, a2)
+                        mainWindow.webContents.send('exeAll', command, ...args)
                     }
                 }
                 timeoutMasterCommands()
@@ -274,7 +261,11 @@ class Hot {
         this.bot.setQuickBarSlot(slot)
     }
     winClick(slot, mode) {
-        this.bot.clickWindow(slot, mode, 0)
+        if(!slot) return
+        let m = 0
+        console.log(slot, mode)
+        if(mode === '1') m = 1
+        this.bot.clickWindow(slot, m, 0)
     }
     look(yaw, pitch) {
         this.bot.look(yaw, (pitch ? pitch: 0))
