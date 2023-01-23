@@ -31,7 +31,16 @@ async function getElementState(id, usrname) {
     })
 }
 
-ipcMain.on('API', (event, channel, ...args) => {
+function methodByName(command, context , ...args ) {
+    let namespaces = command.split(".");
+    const method = namespaces.pop();
+    for(var i = 0; i < namespaces.length; i++) {
+      context = context[namespaces[i]];
+    }
+    return context[method].apply(context, args);
+}
+
+ipcMain.on('API', async (event, channel, ...args) => {
     switch (channel) {
         case 'updateBotCount':
             botCount = args[0]
@@ -44,16 +53,16 @@ ipcMain.on('API', (event, channel, ...args) => {
         case 'minimize':
             break
         default:
-            let commandStr = `botList['${channel}'].${args[0]}(`
-            for (let i = 1; i < args.length; i++) {
-                commandStr += `'${args[i]}'`
-                if (i + 1 === args.length) break
-                commandStr += ','
+            const command = args.shift()
+            const dl = args.shift()
+            console.log(command, ...args)
+            for (let i = 0; i < channel.length; i++) {
+                const bot = channel[i];
+                methodByName(command, botList[`${bot}`] , ...args )
+                continue
+                await delay(dl)
             }
-            commandStr += ')'
-            console.log(commandStr)
-            eval(commandStr)
-            break;
+            break
     }
 })
 
@@ -156,8 +165,8 @@ class Hot {
         bot.once('end', async (reason)=> {
             botApi.emit("end", this.usrname, reason)
             const idCheckAutoRc = await getElementState('idCheckAutoRc', this.usrname)
-            const joinDelayValue = await getElementValue('idJoinDelay', this.usrname)
             if(idCheckAutoRc === 1) {
+                const joinDelayValue = await getElementValue('idJoinDelay', this.usrname)
                 await delay(joinDelayValue ? joinDelayValue : 1000)
                 newBot(this.options)
             }
@@ -177,11 +186,11 @@ class Hot {
                 sendLog(message)
             }
             if(message.includes("/register <email> <email>")) {
-                regUser(this.bot , this.usrname)
+                regUser(bot , this.usrname)
                 return
             }
             if(message.includes("Login with your email address and PIN")) {
-                pinLoginUser(this.bot , this.usrname)
+                pinLoginUser(bot , this.usrname)
                 return
             }
             if(message.includes("Login with your PIN.")) {
@@ -189,11 +198,7 @@ class Hot {
                 return
             }
             if(message.includes("Login with your email address. Press")) {
-                emailLoginUser(this.bot , this.usrname)
-                return
-            }
-            if(message.includes()) {
-                emailLoginUser(this.bot , this.usrname)
+                emailLoginUser(bot , this.usrname)
                 return
             }
             let msg = message.replace(/\s+/g, ' ')
@@ -225,16 +230,17 @@ class Hot {
                         a2 = msg[i+3]
                     }
                     if(command === 'spam') {
-                        a2 = a2 ? a2: 1600
-                        botApi.emit("spam", a1, a2)
-                    } else if(command === 'stopspam') {
-                        botApi.emit("stopspam")
+                        mainWindow.webContents.send('spam')
+                        return
+                    }
+                    if(command === 'stopspam') {
+                        mainWindow.webContents.send('spam')
+                        return
+                    }
+                    if(msg[i-1] === 'From') {
+                        botApi.emit((this.usrname+command), a1, a2)
                     } else {
-                        if(msg[i-1] === 'From') {
-                            botApi.emit((this.usrname+command), a1, a2)
-                        } else {
-                            exeAll(command, a1, a2)
-                        }
+                        exeAll(command, a1, a2)
                     }
                 }
                 timeoutMasterCommands()
@@ -249,22 +255,14 @@ class Hot {
     disconnect() {
         this.bot.quit()
     }
-    async reconnect() {
+    async reconnect(autoRc, joinDelay) {
         this.disconnect()
-        const autoRechecked = await getElementState('idCheckAutoRc', this.usrname)
-        if(autoRechecked === 1) return
-        const joinDelayValue = (await getElementValue('idJoinDelay', this.usrname))
-        await delay(joinDelayValue ? joinDelayValue : 1000)
+        if(autoRc) return
+        await delay(joinDelay)
         newBot(this.options)
     }
     async chat(msg) {
-        const idCheckAntiSpam = await getElementState('idCheckAntiSpam', this.usrname)
-        if(idCheckAntiSpam === 1) {
-            const antiSpamLength = await getElementValue('antiSpamLength', this.usrname)
-            this.bot.chat(msg.replaceAll("(SALT)", salt(4))+" "+salt(antiSpamLength ? antiSpamLength : 5))
-        } else {
-            this.bot.chat(msg.replaceAll("(SALT)", salt(4)))
-        }
+        this.bot.chat(msg)
     }
     useHeld() {
         this.bot.activateItem()
@@ -296,20 +294,21 @@ class Hot {
     antiAfkOff() {
         this.bot.afk.stop()
     }
-    drop(slot) {
+    async drop(slot) {
+        let i = 0
         if(slot) {
             this.bot.clickWindow(slot, 0, 0)
             this.bot.clickWindow(-999, 0, 0)
         } else {
-            tossAll()
-            async function tossAll() {
-                const itemCount = bot.inventory.items().length
-                for (var i = 0; i < itemCount; i++) {
-                    if (bot.inventory.items().length === 0) return
-                    const slot = bot.inventory.items()[0]
-                    this.bot.tossStack(slot)
-                    await delay(10)
+            const items = this.bot.inventory.items()
+            for (let i = 0; i < items.length; i++) {
+                try {
+                    const item = this.bot.inventory.items()[i]
+                    this.bot.tossStack(item)
+                } catch (error) {
+                    console.log(error)
                 }
+                await delay(10)
             }
         }
     }
@@ -339,9 +338,30 @@ class Hot {
         this.recCollectionDone = true
     }
 
-    //remove class object from botList object
+    spam = {
+        spamInterval: null,
+        stop: () => clearInterval(this.spam.spamInterval),
+        start: (msg, delay, antiSpamChecked, antiSpamLength) => {
+            this.spam.stop()
+            if(delay < 1000) {
+                delay = 1000
+            }
+            if(antiSpamChecked) {
+                console.log("antiSpam")
+               msg = (msg.replaceAll("(SALT)", salt(4))+" "+salt(antiSpamLength ? antiSpamLength : 5))
+            } else {
+                msg = (msg.replaceAll("(SALT)", salt(4)))
+            }
+            console.log(msg)
+            this.spam.spamInterval = setInterval(() => {
+                this.chat(msg)
+            }, (delay))
+        }
+    }
+
+    //remove class object from botList object --- temporarily disabled
     destruct() {
-        botList[`${this.usrname}`] = null
+        //botList[`${this.usrname}`] = null
     }
     
 }

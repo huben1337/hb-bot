@@ -1,5 +1,5 @@
 // const { clipboard } = require("electron")
-import { connectBot, addPlayer, rmPlayer, sendLog, exeAll, makeParty, addLeader, resetParty, getTime, saveConfig, stopConnecting, spam }  from "./appUtils.js"
+import { connectBot, addPlayer, rmPlayer, sendLog, exeAll, makeParty, addLeader, resetParty, getTime, saveConfig, stopConnecting }  from "./appUtils.js"
 let currentTime = Date.now()
 //ids
 let idBotUsername = document.getElementById('botUsename')
@@ -81,8 +81,8 @@ window.addEventListener('DOMContentLoaded', () => {
     idBtnRc.addEventListener('click', () => {exeAll("reconnect")})
     idBtnUse.addEventListener('click', () => {exeAll("useheld")})
     idBtnClose.addEventListener('click', () => {exeAll("closewindow")})
-    idBtnSpam.addEventListener('click', () => {spam.start()})
-    idBtnSpamStop.addEventListener('click', () => {spam.stop()})
+    idBtnSpam.addEventListener('click', () => {exeAll('spam.start', idSpamMessage.value, idSpamDelay.value, idCheckAntiSpam.checked, antiSpamLength.value)})
+    idBtnSpamStop.addEventListener('click', () => {exeAll('spam.stop')})
     idBtnChat.addEventListener('click', () => {exeAll("chat", idChatMessage.value)})
     idBtnSetHotbar.addEventListener('click', () => {exeAll("sethotbar", idHotbarSlot.value)})
     idBtnWinClick.addEventListener('click', () => {exeAll("winclick", idBtnWinClickSlot.value, idClickWinLoR.value)})

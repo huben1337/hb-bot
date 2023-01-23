@@ -82,7 +82,6 @@ function stopConnecting() {
 
 //bot connect method
 function connectBot() {
-    
     stopBot = false
     if (idAccountFileCheck.checked && idAccountFilePath.value) {
         startAccountFile(idAccountFilePath.files[0].path)
@@ -258,22 +257,19 @@ function listBots() {
 }
 
 //execute command all bots
-function exeAll(command, a1, a2) {
+async function exeAll(command, ...args) {
     const list = listBots()
     if(!list) return
-    startcmd(a1, a2)
-    async function startcmd(a1, a2) {
-        for (var i = 0; i < list.length; i++) {
-            console.log(list[i])
-            API.send(list[i], command, a1, a2)
-            if(command === 'reconnect') {
-                await delay(idJoinDelay.value ? idJoinDelay.value : 1000)
-            } else {
-                await delay(idLinearValue.value)
-            }
-        }
+    let dl
+    if(command === 'reconnect') {
+        args.push(idCheckAutoRc.checked)
+        dl = (idJoinDelay.value ? idJoinDelay.value : 1000)
+        args.push(dl)
+    } else {
+        dl = idLinearValue.value
     }
-    sendLog(`<li> <img src="./assets/icons/app/code.svg" class="icon-sm" style="filter: brightness(0) saturate(100%) invert(28%) sepia(100%) saturate(359%) hue-rotate(172deg) brightness(93%) contrast(89%)"> [${command}] ${a1? a1: ""} ${a2 ? a2: ""} </li>`)
+    API.send(list, command, dl, ...args)
+    sendLog(`<li> <img src="./assets/icons/app/code.svg" class="icon-sm" style="filter: brightness(0) saturate(100%) invert(28%) sepia(100%) saturate(359%) hue-rotate(172deg) brightness(93%) contrast(89%)"> [${command}] ${args ? args: ""}</li>`)
 }
 
 function listLeaders() {
@@ -410,18 +406,4 @@ function newBot(options) {
     API.send('newBot', (options))
 }
 
-const spam = {
-    spamInterval: null,
-    stop: () => clearInterval(spam.spamInterval),
-    start: () => {
-        let dl = 1000
-        if(idSpamDelay.value > 1000) {
-            dl = idSpamDelay.value
-        }
-        spam.spamInterval = setInterval(() => {
-            exeAll("chat", idSpamMessage.value)
-        }, (dl))
-    }
-}
-
-export { connectBot, addPlayer, rmPlayer, sendLog, exeAll, makeParty, addLeader, resetParty, getTime, saveConfig, stopConnecting, spam }
+export { connectBot, addPlayer, rmPlayer, sendLog, exeAll, makeParty, addLeader, resetParty, getTime, saveConfig, stopConnecting }
